@@ -1,2 +1,8 @@
-# dayflow-app
-DayFlow 🌸 is an aesthetic, pastel-pink productivity dashboard built with React, Vite, and Tailwind CSS. Designed around the motto Plan · Focus · Grow, it unifies prioritized task management, habit tracking, quick notes, and a Pomodoro timer into an intuitive workspace engineered to scale to a full-stack Express and PostgreSQL architecture.
+# DayFlow 🌸
+> **Plan · Focus · Grow** — A soft-aesthetic personal productivity dashboard.
+
+DayFlow brings tasks, daily scheduling, quick capture notes, habit tracking, and a Pomodoro focus timer together into a single, cohesive workspace.
+
+### 🛠️ Built With
+- **Frontend:** React, Vite, Tailwind CSS v4, Lucide React
+- **State & Storage:** React Hooks, LocalStorage (migrating to Node.js/Express & PostgreSQL)
