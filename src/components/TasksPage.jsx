@@ -128,17 +128,17 @@ export default function TasksPage({ tasks, setTasks }) {
   }
 
   return (
-    <div className="task-manager">
-      <div className="task-page-header">
+      <main className="task-manager">
+      <header className="task-page-header">
         <div>
           <p className="task-eyebrow">YOUR PRODUCTIVITY SPACE</p>
-          <h2>My Tasks <span>🌸</span></h2>
-          <p className="muted">One step at a time. You've got this!</p>
+          <h1>My Tasks<span>.</span></h1>
+          <p className="task-subtitle">One step at a time. You've got this!</p>
         </div>
         <button className="pink-button" onClick={openCreateForm}>
           <Plus size={17} /> New Task
         </button>
-      </div>
+      </header>
 
       <div className="task-stats">
         <div className="task-stat-card">
@@ -294,6 +294,6 @@ export default function TasksPage({ tasks, setTasks }) {
           )}
         </div>
       </section>
-    </div>
+    </main>
   )
 }

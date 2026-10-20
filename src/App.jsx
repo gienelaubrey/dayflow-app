@@ -2,6 +2,7 @@ import TasksPage from './components/TasksPage.jsx'
 import CalendarPage from './components/CalendarPage.jsx'
 import NotesPage from './components/NotesPage.jsx'
 import HabitsFocusPage from './components/HabitsFocusPage.jsx'
+import GoalsPage from './components/GoalsPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -90,6 +91,14 @@ function App() {
     return []
   }
   })
+    const [goals, setGoals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dayflow-goals')
+      return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+  })
 
   const [activePage, setActivePage] = useState('Home')
   const [newTask, setNewTask] = useState('')
@@ -120,6 +129,10 @@ function App() {
   useEffect(() => {
   localStorage.setItem('dayflow-events', JSON.stringify(events))
   }, [events])
+
+  useEffect(() => {
+  localStorage.setItem('dayflow-goals', JSON.stringify(goals))
+  }, [goals])
 
   useEffect(() => {
     if (!timerRunning) return
@@ -506,6 +519,13 @@ function App() {
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
           />  
+
+        ) : activePage === 'Goals' ? (
+          <GoalsPage
+            goals={goals}
+            setGoals={setGoals}
+          />
+          
         ) : (
           <section className="panel page-placeholder">
             <div className="placeholder-icon">

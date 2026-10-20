@@ -235,12 +235,12 @@ export default function CalendarPage({
   const headingDate = parseDate(selectedDate)
 
   return (
-    <div className="calendar-page">
+    <main className="calendar-page">
       <header className="calendar-page-header">
         <div>
           <p className="calendar-eyebrow">MAKE TIME FOR WHAT MATTERS</p>
-          <h2>My Calendar 🌸</h2>
-          <p className="muted">
+          <h1>My Calendar<span>.</span></h1>
+          <p className="calendar-subtitle">
             Your plans, your pace, your progress.
           </p>
         </div>
@@ -565,6 +565,6 @@ export default function CalendarPage({
           </form>
         </div>
       )}
-    </div>
+    </main>
   )
 }
