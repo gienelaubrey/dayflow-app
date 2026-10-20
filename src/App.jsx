@@ -1,4 +1,5 @@
 import TasksPage from './components/TasksPage.jsx'
+import CalendarPage from './components/CalendarPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -47,6 +48,14 @@ function StatCard({ icon: Icon, title, value, detail, percent }) {
 }
 
 function App() {
+    const [events, setEvents] = useState(() => {
+  try {
+    const saved = localStorage.getItem('dayflow-events')
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+})
   const [tasks, setTasks] = useState(() => {
     try {
       const saved = localStorage.getItem('dayflow-tasks')
@@ -394,6 +403,13 @@ function App() {
           </>
         ) : activePage === 'Tasks' ? (
           <TasksPage tasks={tasks} setTasks={setTasks} />
+        ) : activePage === 'Calendar' ? (
+          <CalendarPage
+            tasks={tasks}
+            setTasks={setTasks}
+            events={events}
+            setEvents={setEvents}
+          />
         ) : (
           <section className="panel page-placeholder">
             <div className="placeholder-icon"><Flower2 size={34} /></div>
