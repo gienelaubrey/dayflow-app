@@ -1,4 +1,4 @@
-
+import TasksPage from './components/TasksPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -392,14 +392,19 @@ function App() {
               </section>
             </div>
           </>
+        ) : activePage === 'Tasks' ? (
+          <TasksPage tasks={tasks} setTasks={setTasks} />
         ) : (
           <section className="panel page-placeholder">
             <div className="placeholder-icon"><Flower2 size={34} /></div>
             <h2>{activePage}</h2>
             <p>This page is planned for the next development phase.</p>
-            <p className="muted">Your {activePage.toLowerCase()} workspace will live here. 🌸</p>
-            <button className="pink-button"
-              onClick={() => setActivePage('Home')}>Back to dashboard</button>
+            <p className="muted">
+              Your {activePage.toLowerCase()} workspace will live here. 🌸
+            </p>
+            <button className="pink-button" onClick={() => setActivePage('Home')}>
+              Back to dashboard
+            </button>
           </section>
         )}
 
