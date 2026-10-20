@@ -1,5 +1,6 @@
 import TasksPage from './components/TasksPage.jsx'
 import CalendarPage from './components/CalendarPage.jsx'
+import NotesPage from './components/NotesPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -55,14 +56,22 @@ function App() {
   } catch {
     return []
   }
-})
-  const [tasks, setTasks] = useState(() => {
-    try {
+  })
+    const [tasks, setTasks] = useState(() => {
+  try {
       const saved = localStorage.getItem('dayflow-tasks')
       return saved ? JSON.parse(saved) : initialTasks
-    } catch {
-      return initialTasks
-    }
+  } catch {
+    return initialTasks
+  }
+  })
+    const [notes, setNotes] = useState(() => {
+  try {
+      const saved = localStorage.getItem('dayflow-notes')
+      return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
   })
   const [activePage, setActivePage] = useState('Home')
   const [newTask, setNewTask] = useState('')
@@ -77,6 +86,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('dayflow-tasks', JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+  localStorage.setItem('dayflow-notes', JSON.stringify(notes))
+  }, [notes])
 
   useEffect(() => {
     if (!timerRunning) return
@@ -409,6 +422,11 @@ function App() {
             setTasks={setTasks}
             events={events}
             setEvents={setEvents}
+          />
+        ) : activePage === 'Notes' ? (
+          <NotesPage
+            notes={notes}
+            setNotes={setNotes}
           />
         ) : (
           <section className="panel page-placeholder">
