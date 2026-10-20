@@ -1,6 +1,7 @@
 import TasksPage from './components/TasksPage.jsx'
 import CalendarPage from './components/CalendarPage.jsx'
 import NotesPage from './components/NotesPage.jsx'
+import HabitsFocusPage from './components/HabitsFocusPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -73,6 +74,23 @@ function App() {
     return []
   }
   })
+    const [habits, setHabits] = useState(() => {
+  try {
+    const saved = localStorage.getItem('dayflow-habits')
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+  })
+    const [focusSessions, setFocusSessions] = useState(() => {
+  try {
+    const saved = localStorage.getItem('dayflow-focus-sessions')
+    return saved ? JSON.parse(saved) : []
+  } catch {
+    return []
+  }
+  })
+
   const [activePage, setActivePage] = useState('Home')
   const [newTask, setNewTask] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
@@ -90,6 +108,18 @@ function App() {
   useEffect(() => {
   localStorage.setItem('dayflow-notes', JSON.stringify(notes))
   }, [notes])
+
+  useEffect(() => {
+  localStorage.setItem('dayflow-habits', JSON.stringify(habits))
+  }, [habits])
+
+  useEffect(() => {
+  localStorage.setItem('dayflow-focus-sessions', JSON.stringify(focusSessions))
+  }, [focusSessions])
+
+  useEffect(() => {
+  localStorage.setItem('dayflow-events', JSON.stringify(events))
+  }, [events])
 
   useEffect(() => {
     if (!timerRunning) return
@@ -361,21 +391,45 @@ function App() {
                 </div>
                 <p className="muted">Write down a task or idea before you forget.</p>
                 <textarea id="quick-note" placeholder="Type your thoughts here..." />
-                <button className="pink-button save-note-button"
+                <button
+                  className="pink-button save-note-button"
                   onClick={() => {
-                    const text = document.getElementById('quick-note').value.trim()
+                    const textarea = document.getElementById('quick-note')
+                    const text = textarea?.value.trim()
+
                     if (!text) return
-                    const notes = JSON.parse(localStorage.getItem('dayflow-notes') || '[]')
-                    notes.unshift({ id: Date.now(), text, date: new Date().toLocaleDateString() })
-                    localStorage.setItem('dayflow-notes', JSON.stringify(notes))
-                    document.getElementById('quick-note').value = ''
+
+                    const newNote = {
+                      id: Date.now(),
+                      title: text.length > 40 ? `${text.slice(0, 40)}...` : text,
+                      content: text,
+                      text,
+                      category: 'Ideas',
+                      favorite: false,
+                      pinned: false,
+                      date: new Date().toLocaleDateString(),
+                    }
+
+                    setNotes(current => [newNote, ...current])
+
+                    if (textarea) textarea.value = ''
                     alert('Note saved! You can view it in Notes.')
-                  }}>Save Note</button>
+                  }}
+                >
+                  Save Note
+                </button>
               </section>
 
               <section className="panel habits-panel">
                 <div className="panel-heading">
                   <h3><Sprout size={20} /> Habits</h3>
+                    <button
+                      className="icon-button"
+                      onClick={() => setActivePage('Habits')}
+                      aria-label="Open habit tracker"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
                 </div>
                 {['Drink water', 'Exercise / Walk', 'Read a book', 'Learn to code'].map((habit, i) => (
                   <HabitRow key={habit} habit={habit} initialCount={i === 0 ? 5 : i === 1 ? 3 : 2} />
@@ -385,6 +439,13 @@ function App() {
               <section className="panel timer-panel">
                 <div className="panel-heading">
                   <h3><Timer size={20} /> Focus Timer</h3>
+                  <button
+                    className="icon-button"
+                    onClick={() => setActivePage('Time Tracker')}
+                    aria-label="Open time tracker"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
                 <div className="timer-circle" style={{
                   '--timer-progress': `${seconds / ((timerMode === 'Focus' ? 25 : timerMode === 'Short Break' ? 5 : 15) * 60) * 100}%`
@@ -423,20 +484,42 @@ function App() {
             events={events}
             setEvents={setEvents}
           />
+        
         ) : activePage === 'Notes' ? (
           <NotesPage
             notes={notes}
             setNotes={setNotes}
           />
+        ) : activePage === 'Habits' ? (
+          <HabitsFocusPage
+            view="habits"
+            habits={habits}
+            setHabits={setHabits}
+            focusSessions={focusSessions}
+            setFocusSessions={setFocusSessions}
+          />
+        ) : activePage === 'Time Tracker' ? (
+          <HabitsFocusPage
+            view="focus"
+            habits={habits}
+            setHabits={setHabits}
+            focusSessions={focusSessions}
+            setFocusSessions={setFocusSessions}
+          />  
         ) : (
           <section className="panel page-placeholder">
-            <div className="placeholder-icon"><Flower2 size={34} /></div>
+            <div className="placeholder-icon">
+              <Flower2 size={34} />
+            </div>
             <h2>{activePage}</h2>
             <p>This page is planned for the next development phase.</p>
             <p className="muted">
               Your {activePage.toLowerCase()} workspace will live here. 🌸
             </p>
-            <button className="pink-button" onClick={() => setActivePage('Home')}>
+            <button
+              className="pink-button"
+              onClick={() => setActivePage('Home')}
+            >
               Back to dashboard
             </button>
           </section>

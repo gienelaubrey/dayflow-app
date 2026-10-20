@@ -1973,3 +1973,744 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
     flex: 1;
   }
 }
+
+
+/* =========================
+   PHASE 5: HABITS & FOCUS
+========================= */
+
+.habits-page {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 0 40px;
+  color: #33252e;
+}
+
+.habits-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 27px;
+}
+
+.habits-eyebrow {
+  margin: 0 0 8px;
+  color: #bd758f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.habits-header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 750;
+  letter-spacing: -1.3px;
+}
+
+.habits-header h1 span {
+  color: #d783a2;
+}
+
+.habits-subtitle {
+  margin: 10px 0 0;
+  color: #8e7e88;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.habits-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  padding: 12px 15px;
+  border: 1px solid #eee3e9;
+  border-radius: 12px;
+  background: white;
+  color: #8b7583;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Summary cards */
+
+.habits-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.habit-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid #eee4e9;
+  border-radius: 17px;
+  background: #fff;
+}
+
+.habit-stat-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 13px;
+}
+
+.habit-stat-icon.pink {
+  color: #b96c8c;
+  background: #fbeaf1;
+}
+
+.habit-stat-icon.purple {
+  color: #8272b9;
+  background: #f0edfb;
+}
+
+.habit-stat-icon.orange {
+  color: #b98543;
+  background: #fff3df;
+}
+
+.habit-stat-card p {
+  margin: 0 0 7px;
+  color: #978692;
+  font-size: 11px;
+}
+
+.habit-stat-card h2 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 780;
+  letter-spacing: -0.6px;
+}
+
+.habit-stat-card h2 span {
+  color: #a899a2;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* Main layout */
+
+.habits-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(310px, 0.8fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.habits-panel,
+.focus-panel,
+.weekly-panel {
+  min-width: 0;
+  padding: 23px;
+  border: 1px solid #eee4e9;
+  border-radius: 19px;
+  background: white;
+  box-shadow: 0 4px 16px #40203204;
+}
+
+.habits-section-heading,
+.focus-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.habits-section-heading {
+  margin-bottom: 21px;
+}
+
+.habits-section-heading h2,
+.focus-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 780;
+  letter-spacing: -0.5px;
+}
+
+.habits-section-heading p:not(.habits-eyebrow) {
+  margin: 7px 0 0;
+  color: #998994;
+  font-size: 12px;
+}
+
+.habits-add-button,
+.habits-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #f0d5e0;
+  border-radius: 11px;
+  background: #fff4f8;
+  color: #a85f7e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.habits-add-button:hover,
+.habits-submit-button:hover {
+  background: #fbe5ee;
+}
+
+.habits-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Add habit form */
+
+.habit-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 115px;
+  gap: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid #f0dce5;
+  border-radius: 14px;
+  background: #fff9fc;
+}
+
+.habit-create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #786875;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.habit-create-form input,
+.habit-create-form select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #eadfe5;
+  border-radius: 9px;
+  outline: none;
+  background: white;
+  color: #44343e;
+  font: inherit;
+  font-size: 12px;
+}
+
+.habit-create-form input:focus,
+.habit-create-form select:focus {
+  border-color: #d783a2;
+}
+
+.habit-create-form .habits-submit-button {
+  grid-column: 1 / -1;
+  width: 100%;
+  background: #d783a2;
+  color: white;
+}
+
+/* Habit list */
+
+.habit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.habit-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 13px 10px;
+  border: 1px solid #f0e8ed;
+  border-radius: 13px;
+  background: #fff;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.habit-row.completed {
+  border-color: #f1dce5;
+  background: #fff9fc;
+}
+
+.habit-check {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid #dfcbd5;
+  border-radius: 8px;
+  background: white;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.habit-check.checked {
+  border-color: #d783a2;
+  background: #d783a2;
+}
+
+.habit-emoji {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 19px;
+}
+
+.habit-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.habit-details h3 {
+  margin: 0 0 5px;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.habit-row.completed .habit-details h3 {
+  color: #8e7f89;
+}
+
+.habit-details p {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: #b68a57;
+  font-size: 10px;
+}
+
+.habit-status {
+  flex-shrink: 0;
+  color: #b2a2ac;
+  font-size: 10px;
+}
+
+.habit-status.done {
+  color: #9b6880;
+  font-weight: 750;
+}
+
+.habit-delete {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8a6b1;
+  cursor: pointer;
+}
+
+.habit-delete:hover {
+  background: #fbeaf1;
+  color: #b96c8c;
+}
+
+.habits-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 35px 15px;
+  text-align: center;
+}
+
+.habits-empty > span {
+  margin-bottom: 12px;
+  font-size: 32px;
+}
+
+.habits-empty h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.habits-empty p {
+  margin: 0 0 16px;
+  color: #988994;
+  font-size: 12px;
+}
+
+/* Focus timer */
+
+.focus-heading {
+  margin-bottom: 22px;
+}
+
+.focus-heading-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  background: #f9e8ef;
+  color: #b96c8c;
+}
+
+.focus-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #f8f3f6;
+}
+
+.focus-mode-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #93828e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.focus-mode-switch button.active {
+  background: white;
+  color: #ae6382;
+  box-shadow: 0 2px 7px #4020320b;
+}
+
+.focus-timer-circle {
+  position: relative;
+  display: grid;
+  width: min(100%, 255px);
+  aspect-ratio: 1;
+  place-items: center;
+  margin: 15px auto 13px;
+}
+
+.focus-timer-circle svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.focus-progress-ring {
+  transition: stroke-dashoffset 0.3s linear, stroke 0.2s;
+}
+
+.focus-timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-timer-display strong {
+  font-size: clamp(35px, 5vw, 43px);
+  font-weight: 750;
+  letter-spacing: -1.8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-timer-display span {
+  color: #998792;
+  font-size: 11px;
+}
+
+.focus-duration-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 19px;
+}
+
+.focus-duration-settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #8d7b87;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.focus-duration-settings select {
+  width: 100%;
+  height: 38px;
+  padding: 0 9px;
+  border: 1px solid #eee3e9;
+  border-radius: 9px;
+  outline: none;
+  background: white;
+  color: #574651;
+  font: inherit;
+  font-size: 12px;
+}
+
+.focus-duration-settings select:disabled {
+  opacity: 0.7;
+}
+
+.focus-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.focus-reset-button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid #ebdfe6;
+  border-radius: 14px;
+  background: white;
+  color: #8e7785;
+  cursor: pointer;
+}
+
+.focus-reset-button:hover {
+  background: #fff6fa;
+}
+
+.focus-start-button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 14px;
+  background: #d783a2;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 5px 14px #d783a226;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.focus-start-button:hover {
+  transform: translateY(-1px);
+  background: #c66f91;
+}
+
+.focus-tip {
+  margin: 17px 0 0;
+  color: #a18d99;
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* Weekly overview */
+
+.weekly-panel {
+  margin-top: 20px;
+}
+
+.weekly-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #a36a85;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 5px;
+}
+
+.weekly-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 13px 5px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+}
+
+.weekly-day.today {
+  border-color: #f1d8e3;
+  background: #fff6fa;
+}
+
+.weekly-day-name {
+  color: #9d8c97;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.weekly-day-number {
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.weekly-day.today .weekly-day-number {
+  color: #b96c8c;
+}
+
+.weekly-bar-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 27px;
+  height: 65px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f6edf1;
+}
+
+.weekly-bar-fill {
+  width: 100%;
+  min-height: 0;
+  border-radius: 8px;
+  background: #d783a2;
+  transition: height 0.3s ease;
+}
+
+.weekly-day-count {
+  color: #a08d98;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive layout */
+
+@media (max-width: 1100px) {
+  .habits-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .focus-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .focus-timer-circle {
+    width: min(100%, 235px);
+  }
+}
+
+@media (max-width: 650px) {
+  .habits-page {
+    padding-top: 0;
+  }
+
+  .habits-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .habits-date {
+    width: 100%;
+  }
+
+  .habits-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .habit-stat-card {
+    padding: 15px;
+  }
+
+  .habits-panel,
+  .focus-panel,
+  .weekly-panel {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .habits-section-heading h2,
+  .focus-heading h2 {
+    font-size: 18px;
+  }
+
+  .habit-row {
+    gap: 8px;
+    padding: 11px 7px;
+  }
+
+  .habit-emoji {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
+  .habit-status {
+    display: none;
+  }
+
+  .habit-create-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .habit-create-form .habits-submit-button {
+    grid-column: auto;
+  }
+
+  .weekly-panel {
+    margin-top: 14px;
+  }
+
+  .weekly-grid {
+    gap: 3px;
+  }
+
+  .weekly-day {
+    padding: 10px 2px;
+    gap: 7px;
+  }
+
+  .weekly-day-name,
+  .weekly-day-count {
+    font-size: 9px;
+  }
+
+  .weekly-bar-track {
+    height: 48px;
+    max-width: 21px;
+  }
+
+  .weekly-legend {
+    font-size: 10px;
+  }
+}
