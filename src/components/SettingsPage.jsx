@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import {
-  User, Download, Upload, Trash2, Check,
+  User, Download, Upload, Trash2, Check, Camera, Mail,
   CheckSquare, CalendarDays, NotebookPen, Sprout, Timer, Target,
 } from 'lucide-react'
+import Avatar from './Avatar.jsx'
+import { fileToAvatar } from '../lib/image.js'
 
 const DATA_LABELS = [
   { key: 'tasks', label: 'Tasks', icon: CheckSquare },
@@ -13,21 +15,57 @@ const DATA_LABELS = [
   { key: 'goals', label: 'Goals', icon: Target },
 ]
 
-export default function SettingsPage({ settings, setSettings, data, setters }) {
-  const [name, setName] = useState(settings.name || '')
+export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
+  const [name, setName] = useState(user.name || '')
   const [saved, setSaved] = useState(false)
   const [message, setMessage] = useState(null) // { type: 'success' | 'error', text }
-  const fileInput = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  const backupInput = useRef(null)
+  const photoInput = useRef(null)
 
   const trimmedName = name.trim()
-  const nameChanged = trimmedName !== (settings.name || '')
+  const nameChanged = trimmedName !== user.name
 
-  function saveProfile(event) {
+  function showMessage(type, text) {
+    setMessage({ type, text })
+  }
+
+  async function saveProfile(event) {
     event.preventDefault()
-    if (!trimmedName) return
-    setSettings(current => ({ ...current, name: trimmedName }))
-    setSaved(true)
-    window.setTimeout(() => setSaved(false), 2000)
+    if (!trimmedName || !nameChanged) return
+    try {
+      await onUpdateProfile({ name: trimmedName })
+      setSaved(true)
+      window.setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      showMessage('error', err.message)
+    }
+  }
+
+  async function choosePhoto(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const avatar = await fileToAvatar(file)
+      await onUpdateProfile({ avatar })
+      showMessage('success', 'Profile photo updated.')
+    } catch (err) {
+      showMessage('error', err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function removePhoto() {
+    try {
+      await onUpdateProfile({ avatar: null })
+      showMessage('success', 'Profile photo removed.')
+    } catch (err) {
+      showMessage('error', err.message)
+    }
   }
 
   function exportData() {
@@ -35,20 +73,16 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
       app: 'dayflow',
       version: 1,
       exportedAt: new Date().toISOString(),
-      settings,
       data,
     }
-    const blob = new Blob([JSON.stringify(backup, null, 2)], {
-      type: 'application/json',
-    })
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    const stamp = new Date().toISOString().slice(0, 10)
     link.href = url
-    link.download = `dayflow-backup-${stamp}.json`
+    link.download = `dayflow-backup-${new Date().toISOString().slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
-    setMessage({ type: 'success', text: 'Backup downloaded.' })
+    showMessage('success', 'Backup downloaded.')
   }
 
   async function importData(event) {
@@ -58,8 +92,7 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
 
     try {
       const backup = JSON.parse(await file.text())
-
-      if (backup?.app !== 'dayflow' || typeof backup.data !== 'object') {
+      if (backup?.app !== 'dayflow' || typeof backup.data !== 'object' || !backup.data) {
         throw new Error('not a DayFlow backup')
       }
 
@@ -72,16 +105,9 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
       if (!ok) return
 
       incoming.forEach(({ key }) => setters[key](backup.data[key]))
-      if (backup.settings && typeof backup.settings === 'object') {
-        setSettings(current => ({ ...current, ...backup.settings }))
-        setName(backup.settings.name || '')
-      }
-      setMessage({ type: 'success', text: 'Backup restored.' })
+      showMessage('success', 'Backup restored.')
     } catch {
-      setMessage({
-        type: 'error',
-        text: "That file couldn't be read. Choose a backup exported from DayFlow.",
-      })
+      showMessage('error', 'That file couldn’t be read. Choose a backup exported from DayFlow.')
     }
   }
 
@@ -91,7 +117,7 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
     )
     if (!ok) return
     DATA_LABELS.forEach(({ key }) => setters[key]([]))
-    setMessage({ type: 'success', text: 'All data cleared.' })
+    showMessage('success', 'All data cleared.')
   }
 
   return (
@@ -117,24 +143,57 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
           <span className="settings-card-icon"><User size={19} /></span>
           <div>
             <h2>Profile</h2>
-            <p>Your name appears in the dashboard greeting.</p>
+            <p>Your photo and name appear in the top bar and your dashboard greeting.</p>
           </div>
         </div>
 
-        <form className="settings-form" onSubmit={saveProfile}>
-          <div className="settings-profile-row">
-            <div className="avatar settings-avatar" aria-hidden="true">
-              {(trimmedName[0] || '?').toUpperCase()}
+        <div className="settings-photo-row">
+          <Avatar user={user} className="settings-avatar" />
+          <div className="settings-photo-actions">
+            <div className="settings-actions spread">
+              <button
+                type="button"
+                className="cancel-button settings-button"
+                onClick={() => photoInput.current?.click()}
+                disabled={uploading}
+              >
+                <Camera size={16} /> {uploading ? 'Uploading…' : user.avatar ? 'Change photo' : 'Upload photo'}
+              </button>
+              {user.avatar && (
+                <button
+                  type="button"
+                  className="cancel-button settings-button"
+                  onClick={removePhoto}
+                >
+                  Remove
+                </button>
+              )}
             </div>
-            <label>
-              Display name
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                maxLength={30}
-                placeholder="What should we call you?"
-              />
-            </label>
+            <small>JPG, PNG, WebP or GIF, up to 5 MB. It’s cropped to a square.</small>
+          </div>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/*"
+            onChange={choosePhoto}
+            hidden
+            aria-label="Profile photo file"
+          />
+        </div>
+
+        <form className="settings-form" onSubmit={saveProfile}>
+          <label>
+            Display name
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              maxLength={30}
+              placeholder="What should we call you?"
+            />
+          </label>
+
+          <div className="settings-email">
+            <Mail size={15} /> {user.email}
           </div>
 
           <div className="settings-actions">
@@ -174,16 +233,17 @@ export default function SettingsPage({ settings, setSettings, data, setters }) {
           </button>
           <button
             className="cancel-button settings-button"
-            onClick={() => fileInput.current?.click()}
+            onClick={() => backupInput.current?.click()}
           >
             <Upload size={16} /> Restore from backup
           </button>
           <input
-            ref={fileInput}
+            ref={backupInput}
             type="file"
             accept="application/json,.json"
             onChange={importData}
             hidden
+            aria-label="Backup file"
           />
         </div>
       </section>

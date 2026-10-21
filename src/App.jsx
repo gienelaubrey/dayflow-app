@@ -1,26 +1,24 @@
+import { useEffect, useState } from 'react'
+import {
+  House, CalendarDays, CheckSquare, NotebookPen,
+  Sprout, Timer, Target, Settings, Search, Bell,
+  Plus, Circle, CheckCircle2, Clock3, Flame,
+  ChevronLeft, ChevronRight, Heart, Menu, X, Trash2, Flower2, Check,
+} from 'lucide-react'
+
 import TasksPage from './components/TasksPage.jsx'
 import CalendarPage from './components/CalendarPage.jsx'
 import NotesPage from './components/NotesPage.jsx'
 import HabitsFocusPage from './components/HabitsFocusPage.jsx'
 import GoalsPage from './components/GoalsPage.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
-import { useEffect, useState } from 'react'
-import {
-  House, CalendarDays, CheckSquare, NotebookPen,
-  Sprout, Timer, Target, Settings, Search, Bell,
-  Plus, Circle, CheckCircle2, Clock3, Flame,
-  ChevronLeft, ChevronRight, Play, Pause, RotateCcw,
-  Heart, Menu, X, Trash2, Flower2
-} from 'lucide-react'
+import AuthPage from './components/AuthPage.jsx'
+import ProfileMenu from './components/ProfileMenu.jsx'
+import * as auth from './lib/auth.js'
 
-const initialTasks = [
-  { id: 1, title: 'Update CV', time: '9:00 AM', priority: 'High', done: true },
-  { id: 2, title: 'Build portfolio project', time: '10:00 AM', priority: 'High', done: false },
-  { id: 3, title: 'Review interview questions', time: '2:00 PM', priority: 'Medium', done: false },
-  { id: 4, title: 'Go for a short walk', time: '4:00 PM', priority: 'Low', done: false },
-  { id: 5, title: 'Study web development', time: '7:00 PM', priority: 'Medium', done: true },
-  { id: 6, title: 'Read a book', time: '8:30 PM', priority: 'Low', done: false },
-]
+import useStoredState from './lib/useStoredState.js'
+import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
+import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 
 const navItems = [
   { label: 'Home', icon: House },
@@ -32,6 +30,22 @@ const navItems = [
   { label: 'Goals', icon: Target },
   { label: 'Settings', icon: Settings },
 ]
+
+const EVENT_COLORS = {
+  Personal: 'pink',
+  Work: 'purple',
+  Study: 'blue',
+  Interview: 'orange',
+  Health: 'green',
+  Other: 'pink',
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
 
 function StatCard({ icon: Icon, title, value, detail, percent }) {
   return (
@@ -51,139 +65,100 @@ function StatCard({ icon: Icon, title, value, detail, percent }) {
   )
 }
 
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+// Decides whether to show the login screen or the app.
+export default function App() {
+  const [user, setUser] = useState(undefined) // undefined = still checking the session
+
+  useEffect(() => {
+    let cancelled = false
+    getSessionUser().then(found => {
+      if (!cancelled) setUser(found)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  if (user === undefined) return null
+  if (user === null) return <AuthPage onAuthenticated={setUser} />
+
+  return (
+    <Workspace
+      key={user.id}
+      user={user}
+      onUpdateProfile={async patch => setUser(await updateProfile(user.id, patch))}
+      onLogout={async () => {
+        await logout()
+        setUser(null)
+      }}
+    />
+  )
 }
 
-function App() {
-    const [events, setEvents] = useState(() => {
-  try {
-    const saved = localStorage.getItem('dayflow-events')
-    return saved ? JSON.parse(saved) : []
-  } catch {
-    return []
-  }
-  })
-    const [tasks, setTasks] = useState(() => {
-  try {
-      const saved = localStorage.getItem('dayflow-tasks')
-      return saved ? JSON.parse(saved) : initialTasks
-  } catch {
-    return initialTasks
-  }
-  })
-    const [notes, setNotes] = useState(() => {
-  try {
-      const saved = localStorage.getItem('dayflow-notes')
-      return saved ? JSON.parse(saved) : []
-  } catch {
-    return []
-  }
-  })
-    const [habits, setHabits] = useState(() => {
-  try {
-    const saved = localStorage.getItem('dayflow-habits')
-    return saved ? JSON.parse(saved) : []
-  } catch {
-    return []
-  }
-  })
-    const [focusSessions, setFocusSessions] = useState(() => {
-  try {
-    const saved = localStorage.getItem('dayflow-focus-sessions')
-    return saved ? JSON.parse(saved) : []
-  } catch {
-    return []
-  }
-  })
-    const [goals, setGoals] = useState(() => {
-    try {
-      const saved = localStorage.getItem('dayflow-goals')
-      return saved ? JSON.parse(saved) : []
-  } catch {
-    return []
-  }
-  })
+function Workspace({ user, onUpdateProfile, onLogout }) {
+  const key = name => dataKey(user.id, name)
 
-  const [settings, setSettings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('dayflow-settings')
-      return saved ? { name: 'Elle', ...JSON.parse(saved) } : { name: 'Elle' }
-    } catch {
-      return { name: 'Elle' }
-    }
-  })
+  const [tasks, setTasks] = useStoredState(key('tasks'), [])
+  const [events, setEvents] = useStoredState(key('events'), [])
+  const [notes, setNotes] = useStoredState(key('notes'), [])
+  const [habits, setHabits] = useStoredState(key('habits'), [])
+  const [focusSessions, setFocusSessions] = useStoredState(key('focus-sessions'), [])
+  const [goals, setGoals] = useStoredState(key('goals'), [])
 
   const [activePage, setActivePage] = useState('Home')
+  const [calendarDate, setCalendarDate] = useState(null)
   const [newTask, setNewTask] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
   const [search, setSearch] = useState('')
   const [mobileMenu, setMobileMenu] = useState(false)
-  const [seconds, setSeconds] = useState(25 * 60)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [timerMode, setTimerMode] = useState('Focus')
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 9, 1))
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+  const [quickNote, setQuickNote] = useState('')
+  const [noteSaved, setNoteSaved] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem('dayflow-tasks', JSON.stringify(tasks))
-  }, [tasks])
+    if (!noteSaved) return
+    const id = window.setTimeout(() => setNoteSaved(false), 2200)
+    return () => window.clearTimeout(id)
+  }, [noteSaved])
 
-  useEffect(() => {
-  localStorage.setItem('dayflow-notes', JSON.stringify(notes))
-  }, [notes])
+  const today = dateKey()
+  const firstName = user.name.trim().split(/\s+/)[0] || user.name
 
-  useEffect(() => {
-  localStorage.setItem('dayflow-habits', JSON.stringify(habits))
-  }, [habits])
-
-  useEffect(() => {
-  localStorage.setItem('dayflow-focus-sessions', JSON.stringify(focusSessions))
-  }, [focusSessions])
-
-  useEffect(() => {
-  localStorage.setItem('dayflow-events', JSON.stringify(events))
-  }, [events])
-
-  useEffect(() => {
-  localStorage.setItem('dayflow-goals', JSON.stringify(goals))
-  }, [goals])
-
-  useEffect(() => {
-    localStorage.setItem('dayflow-settings', JSON.stringify(settings))
-  }, [settings])
-
-  useEffect(() => {
-    if (!timerRunning) return
-    const id = window.setInterval(() => {
-      setSeconds(s => {
-        if (s <= 1) {
-          setTimerRunning(false)
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => window.clearInterval(id)
-  }, [timerRunning])
-
-  const completed = tasks.filter(task => task.done).length
-  const filteredTasks = tasks.filter(task =>
+  // Tasks that belong on "Today": undated, due today, or overdue.
+  const todayTasks = tasks.filter(task => !task.dueDate || task.dueDate <= today)
+  const filteredTasks = todayTasks.filter(task =>
     task.title.toLowerCase().includes(search.toLowerCase())
   )
+  const completed = tasks.filter(task => task.done).length
+  const overdueCount = tasks.filter(task =>
+    task.dueDate && task.dueDate < today && !task.done
+  ).length
+
+  const focusMinutesToday = focusSessions
+    .filter(session => session.date === today)
+    .reduce((total, session) => total + (session.minutes || 0), 0)
+  const goalsCompleted = goals.filter(goal => goal.progress >= 100).length
+  const streak = overallStreak(habits)
+
+  const todayEvents = events
+    .filter(event => event.date === today)
+    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
+  const todayDueTasks = tasks.filter(task => task.dueDate === today && !task.done)
 
   function addTask(e) {
     e.preventDefault()
-    if (!newTask.trim()) return
+    const title = newTask.trim()
+    if (!title) return
     setTasks(current => [
       ...current,
       {
-        id: Date.now(),
-        title: newTask.trim(),
-        time: 'No time set',
+        id: crypto.randomUUID(),
+        title,
+        description: '',
         priority: 'Medium',
+        dueDate: today,
+        time: today,
         done: false,
       },
     ])
@@ -193,21 +168,48 @@ function App() {
 
   function toggleTask(id) {
     setTasks(current =>
-      current.map(task =>
-        task.id === id ? { ...task, done: !task.done } : task
-      )
+      current.map(task => task.id === id ? { ...task, done: !task.done } : task)
     )
   }
 
   function deleteTask(id) {
+    if (!window.confirm('Delete this task?')) return
     setTasks(current => current.filter(task => task.id !== id))
   }
 
-  function changeTimer(mode) {
-    const durations = { Focus: 25, 'Short Break': 5, 'Long Break': 15 }
-    setTimerMode(mode)
-    setTimerRunning(false)
-    setSeconds(durations[mode] * 60)
+  function toggleHabit(id) {
+    setHabits(current => current.map(habit => {
+      if (habit.id !== id) return habit
+      const dates = habit.completedDates || []
+      return {
+        ...habit,
+        completedDates: dates.includes(today)
+          ? dates.filter(date => date !== today)
+          : [...dates, today],
+      }
+    }))
+  }
+
+  function saveQuickNote(e) {
+    e.preventDefault()
+    const text = quickNote.trim()
+    if (!text) return
+    const now = new Date().toISOString()
+    setNotes(current => [
+      {
+        id: crypto.randomUUID(),
+        title: text.length > 48 ? `${text.slice(0, 48)}…` : text,
+        content: text,
+        category: 'Ideas',
+        favorite: false,
+        pinned: false,
+        createdAt: now,
+        updatedAt: now,
+      },
+      ...current,
+    ])
+    setQuickNote('')
+    setNoteSaved(true)
   }
 
   function changeMonth(offset) {
@@ -216,27 +218,39 @@ function App() {
     )
   }
 
+  function openCalendarOn(day) {
+    setCalendarDate(dateKey(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)))
+    setActivePage('Calendar')
+  }
+
+  function goTo(page) {
+    setActivePage(page)
+    setMobileMenu(false)
+    if (page === 'Calendar') setCalendarDate(null)
+  }
+
   const monthLabel = currentMonth.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   })
-
-  const daysInMonth = new Date(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth() + 1,
-    0
-  ).getDate()
-
-  const firstDay = new Date(
-    currentMonth.getFullYear(),
-    currentMonth.getMonth(),
-    1
-  ).getDay()
-
-  const today = new Date()
+  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()
+  const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay()
+  const now = new Date()
   const isCurrentMonth =
-    today.getFullYear() === currentMonth.getFullYear() &&
-    today.getMonth() === currentMonth.getMonth()
+    now.getFullYear() === currentMonth.getFullYear() &&
+    now.getMonth() === currentMonth.getMonth()
+
+  const busyDays = new Set([
+    ...events.map(event => event.date),
+    ...tasks.filter(task => task.dueDate && !task.done).map(task => task.dueDate),
+  ])
+  const monthPrefix = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-`
+
+  const lastSevenDays = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (6 - i))
+    return dateKey(date)
+  })
 
   return (
     <div className="app-shell">
@@ -262,10 +276,7 @@ function App() {
           {navItems.map(({ label, icon: Icon }) => (
             <button key={label}
               className={`nav-item ${activePage === label ? 'active' : ''}`}
-              onClick={() => {
-                setActivePage(label)
-                setMobileMenu(false)
-              }}>
+              onClick={() => goTo(label)}>
               <Icon size={19} />
               <span>{label}</span>
             </button>
@@ -286,22 +297,33 @@ function App() {
             <Menu size={22} />
           </button>
           <div className="welcome">
-            <h2>{getGreeting()}, {settings.name}! <Flower2 size={22} /></h2>
+            <h2>{getGreeting()}, {firstName}! <Flower2 size={22} /></h2>
             <p>You're one step closer to your goals today. Keep going!</p>
           </div>
           <div className="topbar-actions">
-            <label className="search-box">
-              <Search size={18} />
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search your tasks..." />
-              {search && <button onClick={() => setSearch('')}
-                aria-label="Clear search"><X size={16} /></button>}
-            </label>
+            {activePage === 'Home' && (
+              <label className="search-box">
+                <Search size={18} />
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Search your tasks..." />
+                {search && <button onClick={() => setSearch('')}
+                  aria-label="Clear search"><X size={16} /></button>}
+              </label>
+            )}
             <button className="icon-button notification-button"
-              aria-label="Notifications">
-              <Bell size={21} /><span className="notification-dot" />
+              onClick={() => goTo('Tasks')}
+              title={overdueCount ? `${overdueCount} overdue` : 'No overdue tasks'}
+              aria-label={overdueCount
+                ? `${overdueCount} overdue tasks, open tasks`
+                : 'Notifications, nothing overdue'}>
+              <Bell size={21} />
+              {overdueCount > 0 && <span className="notification-dot" />}
             </button>
-            <div className="avatar">{(settings.name[0] || '?').toUpperCase()}</div>
+            <ProfileMenu
+              user={user}
+              onOpenSettings={() => goTo('Settings')}
+              onLogout={onLogout}
+            />
           </div>
         </header>
 
@@ -311,12 +333,18 @@ function App() {
               <StatCard icon={CheckSquare} title="Tasks Completed"
                 value={`${completed} / ${tasks.length}`}
                 percent={tasks.length ? Math.round(completed / tasks.length * 100) : 0} />
-              <StatCard icon={Clock3} title="Focus Time" value="0.0 h"
-                detail="Your focus sessions will appear here." />
-              <StatCard icon={CalendarDays} title="This Week's Goals"
-                value="2 / 5" percent={40} />
-              <StatCard icon={Flame} title="Current Streak" value="4 days"
-                detail="Keep showing up. ♥" />
+              <StatCard icon={Clock3} title="Focus Time"
+                value={`${(focusMinutesToday / 60).toFixed(1)} h`}
+                detail={focusMinutesToday
+                  ? `${focusMinutesToday} min focused today`
+                  : 'Finish a focus session to see it here.'} />
+              <StatCard icon={Target} title="Goals Completed"
+                value={`${goalsCompleted} / ${goals.length}`}
+                percent={goals.length ? Math.round(goalsCompleted / goals.length * 100) : 0}
+                detail={goals.length ? undefined : 'Add a goal to track it here.'} />
+              <StatCard icon={Flame} title="Current Streak"
+                value={`${streak} ${streak === 1 ? 'day' : 'days'}`}
+                detail={streak ? 'Keep showing up. ♥' : 'Complete a habit to start one.'} />
             </div>
 
             <div className="dashboard-grid">
@@ -344,7 +372,11 @@ function App() {
 
                 <div className="task-list">
                   {filteredTasks.length === 0 && (
-                    <p className="empty-state">No tasks found. Add a task to get started! 🌸</p>
+                    <p className="empty-state">
+                      {search
+                        ? 'No tasks match your search.'
+                        : 'Nothing on your list for today. Add a task to get started! 🌸'}
+                    </p>
                   )}
                   {filteredTasks.map(task => (
                     <div className={`task-row ${task.done ? 'task-done' : ''}`}
@@ -352,14 +384,19 @@ function App() {
                       <button className={`task-check ${task.done ? 'checked' : ''}`}
                         onClick={() => toggleTask(task.id)}
                         aria-label={task.done ? 'Mark incomplete' : 'Complete task'}>
-                        {task.done && <CheckCircle2 size={20} />}
-                        {!task.done && <Circle size={21} />}
+                        {task.done ? <CheckCircle2 size={20} /> : <Circle size={21} />}
                       </button>
                       <span className="task-title">{task.title}</span>
-                      <span className={`priority priority-${task.priority.toLowerCase()}`}>
-                        {task.priority}
+                      <span className={`priority priority-${(task.priority || 'Medium').toLowerCase()}`}>
+                        {task.priority || 'Medium'}
                       </span>
-                      <span className="task-time">{task.time}</span>
+                      <span className="task-time">
+                        {task.dueDate === today
+                          ? 'Today'
+                          : task.dueDate
+                            ? `Due ${task.dueDate}`
+                            : 'No date'}
+                      </span>
                       <button className="icon-button delete-button"
                         onClick={() => deleteTask(task.id)}
                         aria-label={`Delete ${task.title}`}>
@@ -369,15 +406,17 @@ function App() {
                   ))}
                 </div>
                 <div className="task-footer">
-                  <span>{completed} completed</span>
-                  <span>{tasks.length - completed} remaining</span>
+                  <span>{filteredTasks.filter(task => task.done).length} completed</span>
+                  <span>{filteredTasks.filter(task => !task.done).length} remaining</span>
                 </div>
               </section>
 
               <section className="panel schedule-panel">
                 <div className="panel-heading">
                   <h3><CalendarDays size={21} /> Calendar</h3>
-                  <span className="pink-text">Your month</span>
+                  <button className="pink-text link-button" onClick={() => goTo('Calendar')}>
+                    Open calendar
+                  </button>
                 </div>
                 <div className="month-switcher">
                   <button className="icon-button" onClick={() => changeMonth(-1)}
@@ -395,10 +434,16 @@ function App() {
                   )}
                   {Array.from({ length: daysInMonth }, (_, i) => {
                     const day = i + 1
+                    const hasItems = busyDays.has(`${monthPrefix}${String(day).padStart(2, '0')}`)
                     return (
                       <button key={day}
-                        className={`calendar-day ${isCurrentMonth && today.getDate() === day ? 'today' : ''}`}
-                        onClick={() => setActivePage('Tasks')}>
+                        className={[
+                          'calendar-day',
+                          isCurrentMonth && now.getDate() === day ? 'today' : '',
+                          hasItems ? 'has-items' : '',
+                        ].filter(Boolean).join(' ')}
+                        onClick={() => openCalendarOn(day)}
+                        aria-label={`Open ${monthLabel} ${day} in calendar`}>
                         {day}
                       </button>
                     )
@@ -406,15 +451,21 @@ function App() {
                 </div>
                 <div className="schedule-divider" />
                 <h4 className="subheading">Your day at a glance</h4>
-                {[
-                  ['9:00 AM', 'Update CV', 'pink'],
-                  ['10:00 AM', 'Build portfolio project', 'purple'],
-                  ['2:00 PM', 'Review interview questions', 'blue'],
-                  ['4:00 PM', 'Walk / Fresh Air', 'green'],
-                ].map(([time, title, color]) => (
-                  <div className="schedule-row" key={time}>
-                    <span>{time}</span>
-                    <div className={`schedule-event ${color}`}>{title}</div>
+                {todayEvents.length === 0 && todayDueTasks.length === 0 && (
+                  <p className="empty-state">Nothing scheduled for today.</p>
+                )}
+                {todayEvents.map(event => (
+                  <div className="schedule-row" key={event.id}>
+                    <span>{formatTime(event.startTime)}</span>
+                    <div className={`schedule-event ${EVENT_COLORS[event.category] || 'pink'}`}>
+                      {event.title}
+                    </div>
+                  </div>
+                ))}
+                {todayDueTasks.map(task => (
+                  <div className="schedule-row" key={task.id}>
+                    <span>Due</span>
+                    <div className="schedule-event blue">{task.title}</div>
                   </div>
                 ))}
               </section>
@@ -424,50 +475,64 @@ function App() {
                   <h3><NotebookPen size={20} /> Quick Capture</h3>
                 </div>
                 <p className="muted">Write down a task or idea before you forget.</p>
-                <textarea id="quick-note" placeholder="Type your thoughts here..." />
-                <button
-                  className="pink-button save-note-button"
-                  onClick={() => {
-                    const textarea = document.getElementById('quick-note')
-                    const text = textarea?.value.trim()
-
-                    if (!text) return
-
-                    const newNote = {
-                      id: Date.now(),
-                      title: text.length > 40 ? `${text.slice(0, 40)}...` : text,
-                      content: text,
-                      text,
-                      category: 'Ideas',
-                      favorite: false,
-                      pinned: false,
-                      date: new Date().toLocaleDateString(),
-                    }
-
-                    setNotes(current => [newNote, ...current])
-
-                    if (textarea) textarea.value = ''
-                    alert('Note saved! You can view it in Notes.')
-                  }}
-                >
-                  Save Note
-                </button>
+                <form onSubmit={saveQuickNote}>
+                  <textarea
+                    value={quickNote}
+                    onChange={e => setQuickNote(e.target.value)}
+                    placeholder="Type your thoughts here..."
+                    aria-label="Quick note"
+                  />
+                  <button
+                    className="pink-button save-note-button"
+                    type="submit"
+                    disabled={!quickNote.trim()}
+                  >
+                    {noteSaved ? <><Check size={15} /> Saved to Notes</> : 'Save Note'}
+                  </button>
+                </form>
               </section>
 
               <section className="panel habits-panel">
                 <div className="panel-heading">
                   <h3><Sprout size={20} /> Habits</h3>
-                    <button
-                      className="icon-button"
-                      onClick={() => setActivePage('Habits')}
-                      aria-label="Open habit tracker"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
+                  <button
+                    className="icon-button"
+                    onClick={() => goTo('Habits')}
+                    aria-label="Open habit tracker"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
-                {['Drink water', 'Exercise / Walk', 'Read a book', 'Learn to code'].map((habit, i) => (
-                  <HabitRow key={habit} habit={habit} initialCount={i === 0 ? 5 : i === 1 ? 3 : 2} />
-                ))}
+                {habits.length === 0 && (
+                  <p className="empty-state">
+                    No habits yet.{' '}
+                    <button className="link-button pink-text" onClick={() => goTo('Habits')}>
+                      Add your first habit
+                    </button>
+                  </p>
+                )}
+                {habits.slice(0, 4).map(habit => {
+                  const done = (habit.completedDates || []).includes(today)
+                  const doneDays = new Set(habit.completedDates || [])
+                  return (
+                    <div className="home-habit-row" key={habit.id}>
+                      <button className={`task-check ${done ? 'checked' : ''}`}
+                        onClick={() => toggleHabit(habit.id)}
+                        aria-label={`${done ? 'Unmark' : 'Mark'} ${habit.name} for today`}>
+                        {done ? <CheckCircle2 size={19} /> : <Circle size={20} />}
+                      </button>
+                      <div className="habit-info">
+                        <span>{habit.icon} {habit.name}</span>
+                        <small>{habitStreak(habit)} day streak</small>
+                      </div>
+                      <div className="habit-dots" aria-hidden="true">
+                        {lastSevenDays.map(day =>
+                          <span key={day} className={doneDays.has(day) ? 'filled' : ''} />
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </section>
             </div>
           </>
@@ -475,17 +540,15 @@ function App() {
           <TasksPage tasks={tasks} setTasks={setTasks} />
         ) : activePage === 'Calendar' ? (
           <CalendarPage
+            key={calendarDate || 'today'}
+            initialDate={calendarDate}
             tasks={tasks}
             setTasks={setTasks}
             events={events}
             setEvents={setEvents}
           />
-        
         ) : activePage === 'Notes' ? (
-          <NotesPage
-            notes={notes}
-            setNotes={setNotes}
-          />
+          <NotesPage notes={notes} setNotes={setNotes} />
         ) : activePage === 'Habits' ? (
           <HabitsFocusPage
             view="habits"
@@ -501,18 +564,13 @@ function App() {
             setHabits={setHabits}
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
-          />  
-
-        ) : activePage === 'Goals' ? (
-          <GoalsPage
-            goals={goals}
-            setGoals={setGoals}
           />
-          
-        ) : activePage === 'Settings' ? (
+        ) : activePage === 'Goals' ? (
+          <GoalsPage goals={goals} setGoals={setGoals} />
+        ) : (
           <SettingsPage
-            settings={settings}
-            setSettings={setSettings}
+            user={user}
+            onUpdateProfile={onUpdateProfile}
             data={{ tasks, events, notes, habits, focusSessions, goals }}
             setters={{
               tasks: setTasks,
@@ -523,24 +581,6 @@ function App() {
               goals: setGoals,
             }}
           />
-
-        ) : (
-          <section className="panel page-placeholder">
-            <div className="placeholder-icon">
-              <Flower2 size={34} />
-            </div>
-            <h2>{activePage}</h2>
-            <p>This page is planned for the next development phase.</p>
-            <p className="muted">
-              Your {activePage.toLowerCase()} workspace will live here. 🌸
-            </p>
-            <button
-              className="pink-button"
-              onClick={() => setActivePage('Home')}
-            >
-              Back to dashboard
-            </button>
-          </section>
         )}
 
         <footer className="app-footer">
@@ -551,26 +591,3 @@ function App() {
     </div>
   )
 }
-
-function HabitRow({ habit, initialCount }) {
-  const [done, setDone] = useState(false)
-  return (
-    <div className="habit-row">
-      <button className={`task-check ${done ? 'checked' : ''}`}
-        onClick={() => setDone(!done)} aria-label={`Toggle ${habit}`}>
-        {done ? <CheckCircle2 size={19} /> : <Circle size={20} />}
-      </button>
-      <div className="habit-info">
-        <span>{habit}</span>
-        <small>{initialCount + (done ? 1 : 0)} / 7 days</small>
-      </div>
-      <div className="habit-dots">
-        {Array.from({ length: 7 }, (_, i) =>
-          <span key={i} className={i < initialCount + (done ? 1 : 0) ? 'filled' : ''} />
-        )}
-      </div>
-    </div>
-  )
-}
-
-export default App
