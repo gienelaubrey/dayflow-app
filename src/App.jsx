@@ -3,6 +3,7 @@ import CalendarPage from './components/CalendarPage.jsx'
 import NotesPage from './components/NotesPage.jsx'
 import HabitsFocusPage from './components/HabitsFocusPage.jsx'
 import GoalsPage from './components/GoalsPage.jsx'
+import SettingsPage from './components/SettingsPage.jsx'
 import { useEffect, useState } from 'react'
 import {
   House, CalendarDays, CheckSquare, NotebookPen,
@@ -48,6 +49,13 @@ function StatCard({ icon: Icon, title, value, detail, percent }) {
       </div>
     </section>
   )
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
 function App() {
@@ -100,6 +108,15 @@ function App() {
   }
   })
 
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dayflow-settings')
+      return saved ? { name: 'Elle', ...JSON.parse(saved) } : { name: 'Elle' }
+    } catch {
+      return { name: 'Elle' }
+    }
+  })
+
   const [activePage, setActivePage] = useState('Home')
   const [newTask, setNewTask] = useState('')
   const [showAddTask, setShowAddTask] = useState(false)
@@ -133,6 +150,10 @@ function App() {
   useEffect(() => {
   localStorage.setItem('dayflow-goals', JSON.stringify(goals))
   }, [goals])
+
+  useEffect(() => {
+    localStorage.setItem('dayflow-settings', JSON.stringify(settings))
+  }, [settings])
 
   useEffect(() => {
     if (!timerRunning) return
@@ -265,7 +286,7 @@ function App() {
             <Menu size={22} />
           </button>
           <div className="welcome">
-            <h2>Good morning, Elle! <Flower2 size={22} /></h2>
+            <h2>{getGreeting()}, {settings.name}! <Flower2 size={22} /></h2>
             <p>You're one step closer to your goals today. Keep going!</p>
           </div>
           <div className="topbar-actions">
@@ -280,7 +301,7 @@ function App() {
               aria-label="Notifications">
               <Bell size={21} /><span className="notification-dot" />
             </button>
-            <div className="avatar">E</div>
+            <div className="avatar">{(settings.name[0] || '?').toUpperCase()}</div>
           </div>
         </header>
 
@@ -448,44 +469,6 @@ function App() {
                   <HabitRow key={habit} habit={habit} initialCount={i === 0 ? 5 : i === 1 ? 3 : 2} />
                 ))}
               </section>
-
-              <section className="panel timer-panel">
-                <div className="panel-heading">
-                  <h3><Timer size={20} /> Focus Timer</h3>
-                  <button
-                    className="icon-button"
-                    onClick={() => setActivePage('Time Tracker')}
-                    aria-label="Open time tracker"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-                <div className="timer-circle" style={{
-                  '--timer-progress': `${seconds / ((timerMode === 'Focus' ? 25 : timerMode === 'Short Break' ? 5 : 15) * 60) * 100}%`
-                }}>
-                  <strong>{String(Math.floor(seconds / 60)).padStart(2, '0')}:{String(seconds % 60).padStart(2, '0')}</strong>
-                  <span>{timerMode}</span>
-                </div>
-                <div className="timer-modes">
-                  {['Focus', 'Short Break', 'Long Break'].map(mode => (
-                    <button key={mode}
-                      className={timerMode === mode ? 'selected' : ''}
-                      onClick={() => changeTimer(mode)}>{mode}</button>
-                  ))}
-                </div>
-                <div className="timer-actions">
-                  <button className="pink-button timer-play"
-                    onClick={() => {
-                      if (seconds === 0) changeTimer(timerMode)
-                      else setTimerRunning(!timerRunning)
-                    }}>
-                    {timerRunning ? <Pause size={18} /> : <Play size={18} />}
-                    {timerRunning ? 'Pause' : 'Start focus'}
-                  </button>
-                  <button className="icon-button" onClick={() => changeTimer(timerMode)}
-                    aria-label="Reset timer"><RotateCcw size={18} /></button>
-                </div>
-              </section>
             </div>
           </>
         ) : activePage === 'Tasks' ? (
@@ -526,6 +509,21 @@ function App() {
             setGoals={setGoals}
           />
           
+        ) : activePage === 'Settings' ? (
+          <SettingsPage
+            settings={settings}
+            setSettings={setSettings}
+            data={{ tasks, events, notes, habits, focusSessions, goals }}
+            setters={{
+              tasks: setTasks,
+              events: setEvents,
+              notes: setNotes,
+              habits: setHabits,
+              focusSessions: setFocusSessions,
+              goals: setGoals,
+            }}
+          />
+
         ) : (
           <section className="panel page-placeholder">
             <div className="placeholder-icon">

@@ -324,7 +324,7 @@ export default function HabitsFocusPage({
         </article>
       </section>
     )}
-      <div className="habits-layout">
+        <div className={`habits-layout ${view === 'focus' ? 'focus-only-layout' : ''}`}>      
         {view !== 'focus' && (
         <section className="habits-panel">
           <div className="habits-section-heading">
