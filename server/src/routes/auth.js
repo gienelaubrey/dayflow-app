@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma.js'
-import { sendVerificationEmail } from '../lib/email.js'
+import { sendPasswordResetEmail, sendVerificationEmail } from '../lib/email.js'
 import {
   generateOtp,
   hashOtp,
@@ -250,6 +250,143 @@ router.post('/resend-otp', async (req, res, next) => {
       email,
       resendAfterSeconds: otpResendSeconds(),
     })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email)
+    if (validateEmail(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' })
+    }
+
+    // Always use a generic response so this endpoint does not reveal whether
+    // an email address has a DayFlow account.
+    const genericResponse = {
+      ok: true,
+      message: 'If a DayFlow account exists for that email, a reset code has been sent.',
+      resendAfterSeconds: otpResendSeconds(),
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) return res.status(202).json(genericResponse)
+
+    const existingReset = await prisma.passwordReset.findUnique({
+      where: { userId: user.id },
+    })
+    const retryAfterSeconds = secondsUntilResend(existingReset?.lastSentAt)
+    if (retryAfterSeconds > 0) {
+      return res.status(202).json({
+        ...genericResponse,
+        resendAfterSeconds: retryAfterSeconds,
+      })
+    }
+
+    const code = generateOtp()
+    const now = new Date()
+
+    await prisma.passwordReset.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        otpHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+        attempts: 0,
+        lastSentAt: now,
+      },
+      update: {
+        otpHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+        attempts: 0,
+        lastSentAt: now,
+      },
+    })
+
+    try {
+      await sendPasswordResetEmail({ to: email, code })
+    } catch (emailError) {
+      console.error('Password reset email failed:', emailError)
+      await prisma.passwordReset.deleteMany({ where: { userId: user.id } })
+      // Keep the public response generic to avoid account enumeration.
+    }
+
+    return res.status(202).json(genericResponse)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email)
+    const code = String(req.body?.code ?? '').trim()
+    const newPassword = req.body?.password
+
+    if (validateEmail(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' })
+    }
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Enter the 6-digit reset code.' })
+    }
+    const passwordError = validatePassword(newPassword)
+    if (passwordError) return res.status(400).json({ error: passwordError })
+
+    const user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      return res.status(400).json({ error: 'That reset code is invalid or expired.' })
+    }
+
+    const reset = await prisma.passwordReset.findUnique({
+      where: { userId: user.id },
+    })
+    if (!reset) {
+      return res.status(400).json({ error: 'That reset code is invalid or expired.' })
+    }
+
+    if (reset.expiresAt.getTime() <= Date.now()) {
+      return res.status(410).json({ error: 'That reset code has expired. Request a new code.' })
+    }
+
+    const maxAttempts = otpMaxAttempts()
+    if (reset.attempts >= maxAttempts) {
+      return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.' })
+    }
+
+    if (!otpMatches(code, reset.otpHash)) {
+      const updated = await prisma.passwordReset.update({
+        where: { userId: user.id },
+        data: { attempts: { increment: 1 } },
+      })
+      const remaining = Math.max(0, maxAttempts - updated.attempts)
+      return res.status(400).json({
+        error: remaining
+          ? `That reset code is incorrect. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.`
+          : 'Too many incorrect attempts. Request a new code.',
+      })
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+
+    await prisma.$transaction(async tx => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      })
+      await tx.passwordReset.delete({ where: { userId: user.id } })
+      // A password reset is a security boundary: revoke every existing login.
+      await tx.session.deleteMany({ where: { userId: user.id } })
+    })
+
+    res.clearCookie(SESSION_COOKIE, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    })
+
+    return res.json({ ok: true, message: 'Password updated. Log in with your new password.' })
   } catch (error) {
     next(error)
   }

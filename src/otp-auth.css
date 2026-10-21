@@ -95,3 +95,23 @@
     letter-spacing: 8px;
   }
 }
+
+/* Forgot-password additions */
+.auth-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+
+.auth-forgot-link {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--pink-dark);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.auth-forgot-link:hover {
+  text-decoration: underline;
+}

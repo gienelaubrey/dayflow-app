@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Eye, EyeOff, Flower2, Heart, MailCheck } from 'lucide-react'
+import { Eye, EyeOff, Flower2, Heart, KeyRound, MailCheck } from 'lucide-react'
 import {
   AuthError,
   login,
   register,
+  requestPasswordReset,
   resendRegistrationOtp,
+  resetPassword,
   validateEmail,
   verifyRegistration,
 } from '../lib/auth.js'
 import '../otp-auth.css'
 
 export default function AuthPage({ onAuthenticated }) {
-  const [mode, setMode] = useState('login') // login | signup | verify
+  const [mode, setMode] = useState('login') // login | signup | verify | forgot | reset
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [otp, setOtp] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
@@ -23,6 +25,8 @@ export default function AuthPage({ onAuthenticated }) {
 
   const isSignup = mode === 'signup'
   const isVerify = mode === 'verify'
+  const isForgot = mode === 'forgot'
+  const isReset = mode === 'reset'
 
   useEffect(() => {
     if (resendSeconds <= 0) return
@@ -46,7 +50,23 @@ export default function AuthPage({ onAuthenticated }) {
     setNotice('')
     setOtp('')
     setShowPassword(false)
+    setResendSeconds(0)
     setForm(current => ({ ...current, password: '', confirm: '' }))
+  }
+
+  function goToLoginWithNotice(message) {
+    setMode('login')
+    setError('')
+    setNotice(message)
+    setOtp('')
+    setShowPassword(false)
+    setResendSeconds(0)
+    setForm(current => ({
+      ...current,
+      email: pendingEmail || current.email,
+      password: '',
+      confirm: '',
+    }))
   }
 
   async function submit(event) {
@@ -65,6 +85,59 @@ export default function AuthPage({ onAuthenticated }) {
         onAuthenticated(user)
       } catch (err) {
         setError(err instanceof AuthError ? err.message : 'Something went wrong. Please try again.')
+        setBusy(false)
+      }
+      return
+    }
+
+    if (isForgot) {
+      if (!validateEmail(form.email)) {
+        setError('Enter a valid email address.')
+        return
+      }
+
+      setBusy(true)
+      try {
+        const result = await requestPasswordReset({ email: form.email })
+        setPendingEmail(form.email.trim().toLowerCase())
+        setOtp('')
+        setForm(current => ({ ...current, password: '', confirm: '' }))
+        setResendSeconds(result?.resendAfterSeconds || 45)
+        setMode('reset')
+        setNotice(result?.message || 'If an account exists for that email, a reset code has been sent.')
+      } catch (err) {
+        setError(err instanceof AuthError ? err.message : 'Could not start password recovery.')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
+    if (isReset) {
+      if (!/^\d{6}$/.test(otp)) {
+        setError('Enter the 6-digit reset code.')
+        return
+      }
+      if (form.password.length < 8) {
+        setError('Your password needs at least 8 characters.')
+        return
+      }
+      if (form.password !== form.confirm) {
+        setError('The passwords don’t match.')
+        return
+      }
+
+      setBusy(true)
+      try {
+        const result = await resetPassword({
+          email: pendingEmail,
+          code: otp,
+          password: form.password,
+        })
+        goToLoginWithNotice(result?.message || 'Password updated. Log in with your new password.')
+      } catch (err) {
+        setError(err instanceof AuthError ? err.message : 'Could not reset your password.')
+      } finally {
         setBusy(false)
       }
       return
@@ -108,7 +181,7 @@ export default function AuthPage({ onAuthenticated }) {
     }
   }
 
-  async function resendCode() {
+  async function resendRegistrationCode() {
     if (busy || resendSeconds > 0) return
     setError('')
     setNotice('')
@@ -128,6 +201,44 @@ export default function AuthPage({ onAuthenticated }) {
       setBusy(false)
     }
   }
+
+  async function resendResetCode() {
+    if (busy || resendSeconds > 0) return
+    setError('')
+    setNotice('')
+    setBusy(true)
+
+    try {
+      const result = await requestPasswordReset({ email: pendingEmail })
+      setResendSeconds(result?.resendAfterSeconds || 45)
+      setOtp('')
+      setNotice(result?.message || 'If an account exists for that email, a reset code has been sent.')
+    } catch (err) {
+      setError(err instanceof AuthError ? err.message : 'Could not request another reset code.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const heading = isVerify
+    ? 'Verify your email'
+    : isForgot
+      ? 'Forgot your password?'
+      : isReset
+        ? 'Reset your password'
+        : isSignup
+          ? 'Create your account'
+          : 'Welcome back'
+
+  const subheading = isVerify
+    ? <>We sent a 6-digit code to <strong>{pendingEmail}</strong>.</>
+    : isForgot
+      ? 'Enter your account email and we’ll send you a reset code.'
+      : isReset
+        ? <>Enter the code sent to <strong>{pendingEmail}</strong> and choose a new password.</>
+        : isSignup
+          ? 'Start planning your days in a minute.'
+          : 'Log in to pick up where you left off.'
 
   return (
     <div className="auth-shell">
@@ -153,17 +264,13 @@ export default function AuthPage({ onAuthenticated }) {
       <main className="auth-panel">
         <form className="auth-card" onSubmit={submit} noValidate>
           <div className="auth-heading">
-            {isVerify && <span className="auth-verify-icon"><MailCheck size={22} /></span>}
-            <h2>
-              {isVerify ? 'Verify your email' : isSignup ? 'Create your account' : 'Welcome back'}
-            </h2>
-            <p>
-              {isVerify
-                ? <>We sent a 6-digit code to <strong>{pendingEmail}</strong>.</>
-                : isSignup
-                  ? 'Start planning your days in a minute.'
-                  : 'Log in to pick up where you left off.'}
-            </p>
+            {(isVerify || isForgot || isReset) && (
+              <span className="auth-verify-icon">
+                {isVerify ? <MailCheck size={22} /> : <KeyRound size={22} />}
+              </span>
+            )}
+            <h2>{heading}</h2>
+            <p>{subheading}</p>
           </div>
 
           {error && <div className="auth-error" role="alert">{error}</div>}
@@ -189,27 +296,118 @@ export default function AuthPage({ onAuthenticated }) {
                 />
               </label>
 
-              <button
-                className="pink-button auth-submit"
-                type="submit"
-                disabled={busy || otp.length !== 6}
-              >
+              <button className="pink-button auth-submit" type="submit" disabled={busy || otp.length !== 6}>
                 {busy ? 'Verifying…' : 'Verify email'}
               </button>
 
               <div className="auth-resend">
                 <span>Didn't get the code?</span>
-                <button
-                  type="button"
-                  onClick={resendCode}
-                  disabled={busy || resendSeconds > 0}
-                >
+                <button type="button" onClick={resendRegistrationCode} disabled={busy || resendSeconds > 0}>
                   {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : 'Resend code'}
                 </button>
               </div>
 
               <div className="auth-verify-links">
                 <button type="button" onClick={() => switchMode('signup')}>Use a different email</button>
+                <span>·</span>
+                <button type="button" onClick={() => switchMode('login')}>Back to log in</button>
+              </div>
+            </>
+          ) : isForgot ? (
+            <>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={update('email')}
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  autoFocus
+                  required
+                />
+              </label>
+
+              <button className="pink-button auth-submit" type="submit" disabled={busy}>
+                {busy ? 'Sending code…' : 'Send reset code'}
+              </button>
+
+              <div className="auth-verify-links">
+                <button type="button" onClick={() => switchMode('login')}>Back to log in</button>
+              </div>
+            </>
+          ) : isReset ? (
+            <>
+              <label>
+                Reset code
+                <input
+                  className="auth-otp-input"
+                  value={otp}
+                  onChange={event => {
+                    setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+                    if (error) setError('')
+                  }}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                  required
+                />
+              </label>
+
+              <label>
+                New password
+                <span className="auth-password">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={update('password')}
+                    autoComplete="new-password"
+                    placeholder="At least 8 characters"
+                    minLength={8}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(value => !value)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </span>
+              </label>
+
+              <label>
+                Confirm new password
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.confirm}
+                  onChange={update('confirm')}
+                  autoComplete="new-password"
+                  placeholder="Type it again"
+                  minLength={8}
+                  required
+                />
+              </label>
+
+              <button
+                className="pink-button auth-submit"
+                type="submit"
+                disabled={busy || otp.length !== 6}
+              >
+                {busy ? 'Updating password…' : 'Reset password'}
+              </button>
+
+              <div className="auth-resend">
+                <span>Didn't get the code?</span>
+                <button type="button" onClick={resendResetCode} disabled={busy || resendSeconds > 0}>
+                  {resendSeconds > 0 ? `Resend in ${resendSeconds}s` : 'Resend code'}
+                </button>
+              </div>
+
+              <div className="auth-verify-links">
+                <button type="button" onClick={() => switchMode('forgot')}>Use a different email</button>
                 <span>·</span>
                 <button type="button" onClick={() => switchMode('login')}>Back to log in</button>
               </div>
@@ -265,6 +463,14 @@ export default function AuthPage({ onAuthenticated }) {
                   </button>
                 </span>
               </label>
+
+              {!isSignup && (
+                <div className="auth-forgot-row">
+                  <button type="button" className="auth-forgot-link" onClick={() => switchMode('forgot')}>
+                    Forgot password?
+                  </button>
+                </div>
+              )}
 
               {isSignup && (
                 <label>

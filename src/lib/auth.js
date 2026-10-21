@@ -154,3 +154,17 @@ export async function updateProfile(userId, patch) {
 
   return body.user
 }
+
+export async function requestPasswordReset({ email }) {
+  return apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function resetPassword({ email, code, password }) {
+  return apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, code, password }),
+  })
+}
