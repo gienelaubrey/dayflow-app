@@ -4,6 +4,7 @@ export function publicUser(user) {
     name: user.name,
     email: user.email,
     avatar: user.avatar,
+    emailVerifiedAt: user.emailVerifiedAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   }

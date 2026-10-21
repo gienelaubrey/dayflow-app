@@ -1,0 +1,97 @@
+/* DayFlow email verification additions. Kept separate so the existing theme is not replaced. */
+.auth-verify-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 12px;
+  border: 1px solid #f1cad9;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #fff1f6, #fde2ec);
+  color: #bf416f;
+  box-shadow: 0 8px 22px rgba(174, 72, 111, 0.09);
+}
+
+.auth-heading strong {
+  color: #694654;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.auth-notice {
+  padding: 11px 13px;
+  border: 1px solid #cfe8dc;
+  border-radius: 11px;
+  background: #effaf5;
+  color: #467562;
+  font-size: var(--text-base);
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.auth-otp-input {
+  height: 58px !important;
+  padding: 10px 16px !important;
+  text-align: center;
+  font-size: 25px !important;
+  font-weight: 800;
+  letter-spacing: 10px;
+  font-variant-numeric: tabular-nums;
+  color: #9f365f !important;
+  background: #fffafd !important;
+}
+
+.auth-otp-input::placeholder {
+  color: #d8b5c3;
+}
+
+.auth-resend,
+.auth-verify-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  text-align: center;
+  color: #8c7c86;
+  font-size: var(--text-base);
+}
+
+.auth-resend button,
+.auth-verify-links button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pink-dark);
+  font: inherit;
+  font-weight: 750;
+}
+
+.auth-resend button:hover:not(:disabled),
+.auth-verify-links button:hover {
+  text-decoration: underline;
+}
+
+.auth-resend button:disabled {
+  color: #bbaab3;
+  cursor: not-allowed;
+}
+
+.auth-verify-links {
+  margin-top: -2px;
+  color: #c5a9b5;
+  font-size: var(--text-sm);
+}
+
+.auth-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none !important;
+}
+
+@media (max-width: 520px) {
+  .auth-otp-input {
+    font-size: 22px !important;
+    letter-spacing: 8px;
+  }
+}

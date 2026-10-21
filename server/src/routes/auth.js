@@ -1,6 +1,16 @@
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma.js'
+import { sendVerificationEmail } from '../lib/email.js'
+import {
+  generateOtp,
+  hashOtp,
+  otpExpiry,
+  otpMatches,
+  otpMaxAttempts,
+  otpResendSeconds,
+  secondsUntilResend,
+} from '../lib/otp.js'
 import {
   createSession,
   deleteSessionByToken,
@@ -59,20 +69,188 @@ router.post('/register', async (req, res, next) => {
       })
     }
 
-    const passwordHash = await bcrypt.hash(req.body.password, 12)
+    const pending = await prisma.pendingRegistration.findUnique({ where: { email } })
+    const retryAfterSeconds = secondsUntilResend(pending?.lastSentAt)
+    if (retryAfterSeconds > 0) {
+      return res.status(429).json({
+        error: `A verification code was already sent. Try again in ${retryAfterSeconds} seconds.`,
+        retryAfterSeconds,
+      })
+    }
 
-    const user = await prisma.user.create({
-      data: { name, email, passwordHash },
+    const passwordHash = await bcrypt.hash(req.body.password, 12)
+    const code = generateOtp()
+    const now = new Date()
+
+    await prisma.pendingRegistration.upsert({
+      where: { email },
+      create: {
+        name,
+        email,
+        passwordHash,
+        otpHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+        attempts: 0,
+        lastSentAt: now,
+      },
+      update: {
+        name,
+        passwordHash,
+        otpHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+        attempts: 0,
+        lastSentAt: now,
+      },
     })
 
-    await issueSession(res, user.id)
-    return res.status(201).json({ user: publicUser(user) })
+    try {
+      await sendVerificationEmail({ to: email, code })
+    } catch (emailError) {
+      console.error('Verification email failed:', emailError)
+      await prisma.pendingRegistration.deleteMany({ where: { email } })
+      return res.status(502).json({
+        error: 'We could not send the verification email. Check the email service configuration and try again.',
+      })
+    }
+
+    return res.status(202).json({
+      verificationRequired: true,
+      email,
+      resendAfterSeconds: otpResendSeconds(),
+    })
   } catch (error) {
     if (error?.code === 'P2002') {
       return res.status(409).json({
         error: 'An account with this email already exists. Try logging in instead.',
       })
     }
+    next(error)
+  }
+})
+
+router.post('/verify-email', async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email)
+    const code = String(req.body?.code ?? '').trim()
+
+    if (validateEmail(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' })
+    }
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Enter the 6-digit verification code.' })
+    }
+
+    const pending = await prisma.pendingRegistration.findUnique({ where: { email } })
+    if (!pending) {
+      const existing = await prisma.user.findUnique({ where: { email } })
+      if (existing) {
+        return res.status(409).json({ error: 'This account is already verified. Log in instead.' })
+      }
+      return res.status(404).json({ error: 'No pending registration was found. Create the account again.' })
+    }
+
+    if (pending.expiresAt.getTime() <= Date.now()) {
+      return res.status(410).json({ error: 'That code has expired. Request a new code.' })
+    }
+
+    const maxAttempts = otpMaxAttempts()
+    if (pending.attempts >= maxAttempts) {
+      return res.status(429).json({ error: 'Too many incorrect attempts. Request a new code.' })
+    }
+
+    if (!otpMatches(code, pending.otpHash)) {
+      const updated = await prisma.pendingRegistration.update({
+        where: { email },
+        data: { attempts: { increment: 1 } },
+      })
+      const remaining = Math.max(0, maxAttempts - updated.attempts)
+      return res.status(400).json({
+        error: remaining
+          ? `That code is incorrect. ${remaining} ${remaining === 1 ? 'attempt' : 'attempts'} remaining.`
+          : 'Too many incorrect attempts. Request a new code.',
+      })
+    }
+
+    const user = await prisma.$transaction(async tx => {
+      const existing = await tx.user.findUnique({ where: { email } })
+      if (existing) {
+        await tx.pendingRegistration.deleteMany({ where: { email } })
+        return existing
+      }
+
+      const created = await tx.user.create({
+        data: {
+          name: pending.name,
+          email: pending.email,
+          passwordHash: pending.passwordHash,
+          emailVerifiedAt: new Date(),
+        },
+      })
+
+      await tx.pendingRegistration.delete({ where: { email } })
+      return created
+    })
+
+    await issueSession(res, user.id)
+    return res.status(201).json({ user: publicUser(user) })
+  } catch (error) {
+    if (error?.code === 'P2002') {
+      return res.status(409).json({ error: 'This account is already verified. Log in instead.' })
+    }
+    next(error)
+  }
+})
+
+router.post('/resend-otp', async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email)
+    if (validateEmail(email)) {
+      return res.status(400).json({ error: 'Enter a valid email address.' })
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return res.status(409).json({ error: 'This account is already verified. Log in instead.' })
+    }
+
+    const pending = await prisma.pendingRegistration.findUnique({ where: { email } })
+    if (!pending) {
+      return res.status(404).json({ error: 'No pending registration was found. Create the account again.' })
+    }
+
+    const retryAfterSeconds = secondsUntilResend(pending.lastSentAt)
+    if (retryAfterSeconds > 0) {
+      return res.status(429).json({
+        error: `You can request another code in ${retryAfterSeconds} seconds.`,
+        retryAfterSeconds,
+      })
+    }
+
+    const code = generateOtp()
+
+    try {
+      await sendVerificationEmail({ to: email, code })
+    } catch (emailError) {
+      console.error('Verification email resend failed:', emailError)
+      return res.status(502).json({ error: 'We could not send a new verification email. Try again shortly.' })
+    }
+
+    await prisma.pendingRegistration.update({
+      where: { email },
+      data: {
+        otpHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+        attempts: 0,
+        lastSentAt: new Date(),
+      },
+    })
+
+    return res.json({
+      ok: true,
+      email,
+      resendAfterSeconds: otpResendSeconds(),
+    })
+  } catch (error) {
     next(error)
   }
 })

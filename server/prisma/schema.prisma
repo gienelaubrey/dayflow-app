@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  name         String
-  email        String         @unique
-  passwordHash String
-  avatar       String?        @db.Text
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  name            String
+  email           String         @unique
+  passwordHash    String
+  avatar          String?        @db.Text
+  emailVerifiedAt DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   sessions      Session[]
   tasks         Task[]
@@ -23,6 +24,21 @@ model User {
   habits        Habit[]
   focusSessions FocusSession[]
   goals         Goal[]
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  otpHash      String
+  expiresAt    DateTime
+  attempts     Int      @default(0)
+  lastSentAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expiresAt])
 }
 
 model Session {
