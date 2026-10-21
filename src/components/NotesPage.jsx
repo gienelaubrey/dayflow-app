@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react'
 import {
   Plus,
@@ -42,6 +41,7 @@ const EMPTY_NOTE = {
 }
 
 function formatDate(date) {
+  if (!date || Number.isNaN(new Date(date).getTime())) return ''
   return new Date(date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -386,7 +386,9 @@ export default function NotesPage({
 
                 <div className="note-card-footer">
                   <span>
-                    Edited {formatDate(note.updatedAt || note.createdAt)}
+                    {formatDate(note.updatedAt || note.createdAt)
+                      ? `Edited ${formatDate(note.updatedAt || note.createdAt)}`
+                      : ''}
                   </span>
 
                   <div className="note-footer-actions">

@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from 'react'
 import {
   Plus,
@@ -23,33 +22,6 @@ const HABIT_COLORS = [
   '#78A995',
   '#E1AA69',
   '#7F9FCB',
-]
-
-const DEFAULT_HABITS = [
-  {
-    id: 'habit-water',
-    name: 'Drink enough water',
-    icon: '💧',
-    color: HABIT_COLORS[0],
-    completedDates: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'habit-reading',
-    name: 'Read for 20 minutes',
-    icon: '📚',
-    color: HABIT_COLORS[1],
-    completedDates: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'habit-walk',
-    name: 'Take a short walk',
-    icon: '🚶',
-    color: HABIT_COLORS[2],
-    completedDates: [],
-    createdAt: new Date().toISOString(),
-  },
 ]
 
 function getDateKey(date = new Date()) {
@@ -153,33 +125,32 @@ export default function HabitsFocusPage({
     if (!isRunning) return
 
     const timerId = window.setInterval(() => {
-      setRemainingSeconds((previous) => {
-        if (previous <= 1) {
-          window.clearInterval(timerId)
-          setIsRunning(false)
-          setTimerCompleted(true)
-
-          if (focusMode === 'focus') {
-            setFocusSessions((previousSessions) => [
-              ...previousSessions,
-              {
-                id: crypto.randomUUID(),
-                date: getDateKey(),
-                minutes: focusMinutes,
-                completedAt: new Date().toISOString(),
-              },
-            ])
-          }
-
-          return 0
-        }
-
-        return previous - 1
-      })
+      setRemainingSeconds((previous) => Math.max(previous - 1, 0))
     }, 1000)
 
     return () => window.clearInterval(timerId)
-  }, [isRunning, focusMode, focusMinutes, setFocusSessions])
+  }, [isRunning])
+
+  // Runs once when the countdown reaches zero. Kept out of the state updater
+  // above so React (and StrictMode) can't record the session twice.
+  useEffect(() => {
+    if (!isRunning || remainingSeconds !== 0) return
+
+    setIsRunning(false)
+    setTimerCompleted(true)
+
+    if (focusMode === 'focus') {
+      setFocusSessions((previousSessions) => [
+        ...previousSessions,
+        {
+          id: crypto.randomUUID(),
+          date: getDateKey(),
+          minutes: focusMinutes,
+          completedAt: new Date().toISOString(),
+        },
+      ])
+    }
+  }, [remainingSeconds, isRunning, focusMode, focusMinutes, setFocusSessions])
 
   function toggleHabit(habitId) {
     setHabits((previous) =>

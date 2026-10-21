@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Plus, CalendarDays,
@@ -83,11 +82,12 @@ export default function CalendarPage({
   setTasks,
   events = [],
   setEvents,
+  initialDate = null,
 }) {
-  const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
+  const [selectedDate, setSelectedDate] = useState(initialDate || dateKey(new Date()))
   const [visibleMonth, setVisibleMonth] = useState(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), 1)
+    const start = initialDate ? parseDate(initialDate) : new Date()
+    return new Date(start.getFullYear(), start.getMonth(), 1)
   })
   const [view, setView] = useState('Month')
   const [showForm, setShowForm] = useState(false)

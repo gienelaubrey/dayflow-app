@@ -14,7 +14,6 @@ import GoalsPage from './components/GoalsPage.jsx'
 import SettingsPage from './components/SettingsPage.jsx'
 import AuthPage from './components/AuthPage.jsx'
 import ProfileMenu from './components/ProfileMenu.jsx'
-import * as auth from './lib/auth.js'
 
 import useStoredState from './lib/useStoredState.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'

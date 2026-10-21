@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from 'react'
 import {
   Plus, Search, Circle, CheckCircle2, Pencil,
@@ -95,14 +94,14 @@ export default function TasksPage({ tasks, setTasks }) {
     if (editingId !== null) {
       setTasks(current => current.map(task =>
         task.id === editingId
-          ? { ...task, ...form, title }
+          ? { ...task, ...form, title, time: form.dueDate || 'No date set' }
           : task
       ))
     } else {
       setTasks(current => [
         ...current,
         {
-          id: Date.now(),
+          id: crypto.randomUUID(),
           ...form,
           title,
           done: false,

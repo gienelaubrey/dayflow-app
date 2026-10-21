@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import {
   Plus,
@@ -190,7 +189,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
               Target date
               <input
                 type="date"
-                min={todayKey()}
+                min={editingId === null ? todayKey() : undefined}
                 value={form.targetDate}
                 onChange={e => setForm({ ...form, targetDate: e.target.value })}
               />

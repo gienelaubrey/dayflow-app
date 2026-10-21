@@ -148,7 +148,7 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
         </div>
 
         <div className="settings-photo-row">
-          <Avatar user={user} className="settings-avatar" />
+          <Avatar user={user} size={84} className="settings-avatar" />
           <div className="settings-photo-actions">
             <div className="settings-actions spread">
               <button

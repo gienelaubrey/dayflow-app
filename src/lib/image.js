@@ -1,14 +1,20 @@
 /**
  * Reads an image File, validates its type, crops it to a center square,
- * resizes it to 128x128 px, and returns a compressed JPEG data URL (~20–40 KB).
+ * resizes it to a square, and returns a compressed JPEG data URL (small enough for localStorage).
  */
-export async function fileToAvatar(file, maxDimension = 128, quality = 0.85) {
+export const MAX_AVATAR_FILE_BYTES = 5 * 1024 * 1024
+
+export async function fileToAvatar(file, maxDimension = 256, quality = 0.85) {
   if (!file) {
     throw new Error('No file provided')
   }
 
   if (!file.type.startsWith('image/')) {
     throw new Error('Please select an image file (PNG, JPG, WebP, etc.).')
+  }
+
+  if (file.size > MAX_AVATAR_FILE_BYTES) {
+    throw new Error('That image is larger than 5 MB. Choose a smaller one.')
   }
 
   return new Promise((resolve, reject) => {
