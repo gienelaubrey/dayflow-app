@@ -10,11 +10,7 @@ import {
   Trophy,
   CircleCheck,
 } from 'lucide-react'
-
-const todayKey = () => {
-  const date = new Date()
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
+import useTodayKey from '../lib/useTodayKey.js'
 
 const emptyGoal = {
   title: '',
@@ -29,6 +25,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyGoal)
   const [filter, setFilter] = useState('All')
+  const today = useTodayKey()
 
   const categories = ['Personal', 'Career', 'Health', 'Learning', 'Finance']
   const completedGoals = goals.filter(goal => goal.progress >= 100).length
@@ -189,7 +186,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
               Target date
               <input
                 type="date"
-                min={editingId === null ? todayKey() : undefined}
+                min={editingId === null ? today : undefined}
                 value={form.targetDate}
                 onChange={e => setForm({ ...form, targetDate: e.target.value })}
               />
@@ -241,7 +238,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
           {visibleGoals.map(goal => {
             const isComplete = goal.progress >= 100
             const overdue = goal.targetDate &&
-              goal.targetDate < todayKey() && !isComplete
+              goal.targetDate < today && !isComplete
 
             return (
               <article className="goal-card" key={goal.id}>

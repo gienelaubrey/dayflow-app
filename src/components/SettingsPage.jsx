@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Avatar from './Avatar.jsx'
 import { fileToAvatar } from '../lib/image.js'
+import { normalizeBackupData } from '../lib/data.js'
 
 const DATA_LABELS = [
   { key: 'tasks', label: 'Tasks', icon: CheckSquare },
@@ -96,7 +97,8 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
         throw new Error('not a DayFlow backup')
       }
 
-      const incoming = DATA_LABELS.filter(({ key }) => Array.isArray(backup.data[key]))
+      const normalizedData = normalizeBackupData(backup.data)
+      const incoming = DATA_LABELS.filter(({ key }) => Object.hasOwn(normalizedData, key))
       if (incoming.length === 0) throw new Error('empty backup')
 
       const ok = window.confirm(
@@ -104,7 +106,7 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
       )
       if (!ok) return
 
-      incoming.forEach(({ key }) => setters[key](backup.data[key]))
+      incoming.forEach(({ key }) => setters[key](normalizedData[key]))
       showMessage('success', 'Backup restored.')
     } catch {
       showMessage('error', 'That file couldn’t be read. Choose a backup exported from DayFlow.')

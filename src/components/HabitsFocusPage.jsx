@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   Plus,
   Trash2,
@@ -15,6 +15,8 @@ import {
   CalendarDays,
   Trophy,
 } from 'lucide-react'
+import { dateKey, habitStreak } from '../lib/dates.js'
+import useTodayKey from '../lib/useTodayKey.js'
 
 const HABIT_COLORS = [
   '#D783A2',
@@ -24,38 +26,10 @@ const HABIT_COLORS = [
   '#7F9FCB',
 ]
 
-function getDateKey(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
 function getDayLabel(date) {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
   })
-}
-
-function getStreak(habit) {
-  const completed = new Set(habit.completedDates || [])
-  const today = new Date()
-  let cursor = new Date(today)
-  let streak = 0
-
-  // If today's habit isn't completed yet, allow the streak
-  // to continue from yesterday.
-  if (!completed.has(getDateKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1)
-  }
-
-  while (completed.has(getDateKey(cursor))) {
-    streak += 1
-    cursor.setDate(cursor.getDate() - 1)
-  }
-
-  return streak
 }
 
 function getLastSevenDays() {
@@ -66,7 +40,7 @@ function getLastSevenDays() {
 
     return {
       date,
-      key: getDateKey(date),
+      key: dateKey(date),
       label: getDayLabel(date),
       day: date.getDate(),
     }
@@ -85,21 +59,30 @@ export default function HabitsFocusPage({
   setHabits,
   focusSessions = [],
   setFocusSessions,
+  focusTimer,
   view = 'all',
 }) {
   const [habitName, setHabitName] = useState('')
   const [habitEmoji, setHabitEmoji] = useState('✨')
   const [showHabitForm, setShowHabitForm] = useState(false)
+  const today = useTodayKey()
 
-  const [focusMode, setFocusMode] = useState('focus')
-  const [focusMinutes, setFocusMinutes] = useState(25)
-  const [breakMinutes, setBreakMinutes] = useState(5)
-  const [remainingSeconds, setRemainingSeconds] = useState(25 * 60)
-  const [isRunning, setIsRunning] = useState(false)
-  const [timerCompleted, setTimerCompleted] = useState(false)
+  const {
+    mode: focusMode,
+    focusMinutes,
+    breakMinutes,
+    remainingSeconds,
+    isRunning,
+    timerCompleted,
+    targetMinutes,
+    resetTimer,
+    changeMode,
+    setFocusMinutes,
+    setBreakMinutes,
+    toggleRunning,
+  } = focusTimer
 
-  const today = getDateKey()
-  const week = useMemo(() => getLastSevenDays(), [])
+  const week = useMemo(() => getLastSevenDays(), [today])
   const completedToday = habits.filter((habit) =>
     (habit.completedDates || []).includes(today)
   ).length
@@ -111,46 +94,6 @@ export default function HabitsFocusPage({
   const todayFocusMinutes = focusSessions
     .filter((session) => session.date === today)
     .reduce((total, session) => total + session.minutes, 0)
-
-  const targetMinutes =
-    focusMode === 'focus' ? focusMinutes : breakMinutes
-
-  useEffect(() => {
-    setRemainingSeconds(targetMinutes * 60)
-    setIsRunning(false)
-    setTimerCompleted(false)
-  }, [targetMinutes])
-
-  useEffect(() => {
-    if (!isRunning) return
-
-    const timerId = window.setInterval(() => {
-      setRemainingSeconds((previous) => Math.max(previous - 1, 0))
-    }, 1000)
-
-    return () => window.clearInterval(timerId)
-  }, [isRunning])
-
-  // Runs once when the countdown reaches zero. Kept out of the state updater
-  // above so React (and StrictMode) can't record the session twice.
-  useEffect(() => {
-    if (!isRunning || remainingSeconds !== 0) return
-
-    setIsRunning(false)
-    setTimerCompleted(true)
-
-    if (focusMode === 'focus') {
-      setFocusSessions((previousSessions) => [
-        ...previousSessions,
-        {
-          id: crypto.randomUUID(),
-          date: getDateKey(),
-          minutes: focusMinutes,
-          completedAt: new Date().toISOString(),
-        },
-      ])
-    }
-  }, [remainingSeconds, isRunning, focusMode, focusMinutes, setFocusSessions])
 
   function toggleHabit(habitId) {
     setHabits((previous) =>
@@ -199,18 +142,6 @@ export default function HabitsFocusPage({
     setHabits((previous) =>
       previous.filter((habit) => habit.id !== id)
     )
-  }
-
-  function resetTimer() {
-    setIsRunning(false)
-    setTimerCompleted(false)
-    setRemainingSeconds(targetMinutes * 60)
-  }
-
-  function changeMode(mode) {
-    setFocusMode(mode)
-    setIsRunning(false)
-    setTimerCompleted(false)
   }
 
   const weekStats = week.map((day) => {
@@ -357,7 +288,7 @@ export default function HabitsFocusPage({
           <div className="habit-list">
             {habits.map((habit) => {
               const done = (habit.completedDates || []).includes(today)
-              const streak = getStreak(habit)
+              const streak = habitStreak(habit)
 
               return (
                 <article
@@ -531,16 +462,14 @@ export default function HabitsFocusPage({
 
             <button
               className="focus-start-button"
-              onClick={() => {
-                if (timerCompleted) {
-                  setRemainingSeconds(targetMinutes * 60)
-                  setTimerCompleted(false)
-                }
-                setIsRunning((value) => !value)
-              }}
+              onClick={toggleRunning}
             >
               {isRunning ? <Pause size={19} /> : <Play size={19} />}
-              {isRunning ? 'Pause' : timerCompleted ? 'Start again' : 'Start focus'}
+              {isRunning
+                ? 'Pause'
+                : timerCompleted
+                  ? 'Start again'
+                  : focusMode === 'focus' ? 'Start focus' : 'Start break'}
             </button>
           </div>
 

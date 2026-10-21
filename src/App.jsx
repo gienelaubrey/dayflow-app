@@ -16,8 +16,14 @@ import AuthPage from './components/AuthPage.jsx'
 import ProfileMenu from './components/ProfileMenu.jsx'
 
 import useStoredState from './lib/useStoredState.js'
+import useFocusTimer from './lib/useFocusTimer.js'
+import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
+import {
+  normalizeTasks, normalizeEvents, normalizeNotes, normalizeHabits,
+  normalizeFocusSessions, normalizeGoals,
+} from './lib/data.js'
 
 const navItems = [
   { label: 'Home', icon: House },
@@ -95,12 +101,15 @@ export default function App() {
 function Workspace({ user, onUpdateProfile, onLogout }) {
   const key = name => dataKey(user.id, name)
 
-  const [tasks, setTasks] = useStoredState(key('tasks'), [])
-  const [events, setEvents] = useStoredState(key('events'), [])
-  const [notes, setNotes] = useStoredState(key('notes'), [])
-  const [habits, setHabits] = useStoredState(key('habits'), [])
-  const [focusSessions, setFocusSessions] = useStoredState(key('focus-sessions'), [])
-  const [goals, setGoals] = useStoredState(key('goals'), [])
+  const [tasks, setTasks] = useStoredState(key('tasks'), [], normalizeTasks)
+  const [events, setEvents] = useStoredState(key('events'), [], normalizeEvents)
+  const [notes, setNotes] = useStoredState(key('notes'), [], normalizeNotes)
+  const [habits, setHabits] = useStoredState(key('habits'), [], normalizeHabits)
+  const [focusSessions, setFocusSessions] = useStoredState(
+    key('focus-sessions'), [], normalizeFocusSessions
+  )
+  const [goals, setGoals] = useStoredState(key('goals'), [], normalizeGoals)
+  const focusTimer = useFocusTimer(key('focus-timer'), setFocusSessions)
 
   const [activePage, setActivePage] = useState('Home')
   const [calendarDate, setCalendarDate] = useState(null)
@@ -121,13 +130,17 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     return () => window.clearTimeout(id)
   }, [noteSaved])
 
-  const today = dateKey()
+  const today = useTodayKey()
   const firstName = user.name.trim().split(/\s+/)[0] || user.name
 
-  // Tasks that belong on "Today": undated, due today, or overdue.
-  const todayTasks = tasks.filter(task => !task.dueDate || task.dueDate <= today)
+  // Today shows active undated/overdue tasks plus tasks actually due today.
+  // Completed tasks from older dates no longer linger on the Home dashboard.
+  const todayTasks = tasks.filter(task => {
+    if (task.done) return task.dueDate === today
+    return !task.dueDate || task.dueDate <= today
+  })
   const filteredTasks = todayTasks.filter(task =>
-    task.title.toLowerCase().includes(search.toLowerCase())
+    (task.title || '').toLowerCase().includes(search.toLowerCase())
   )
   const completed = tasks.filter(task => task.done).length
   const overdueCount = tasks.filter(task =>
@@ -555,6 +568,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             setHabits={setHabits}
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
+            focusTimer={focusTimer}
           />
         ) : activePage === 'Time Tracker' ? (
           <HabitsFocusPage
@@ -563,6 +577,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             setHabits={setHabits}
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
+            focusTimer={focusTimer}
           />
         ) : activePage === 'Goals' ? (
           <GoalsPage goals={goals} setGoals={setGoals} />

@@ -3,6 +3,7 @@ import {
   Plus, Search, Circle, CheckCircle2, Pencil,
   Trash2, CalendarDays, X, ListTodo
 } from 'lucide-react'
+import useTodayKey from '../lib/useTodayKey.js'
 
 const emptyForm = {
   title: '',
@@ -13,13 +14,6 @@ const emptyForm = {
 
 const filters = ['All', 'Today', 'Upcoming', 'Completed', 'Overdue']
 
-function localDateString(date = new Date()) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 export default function TasksPage({ tasks, setTasks }) {
   const [filter, setFilter] = useState('All')
   const [search, setSearch] = useState('')
@@ -28,7 +22,7 @@ export default function TasksPage({ tasks, setTasks }) {
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
 
-  const today = localDateString()
+  const today = useTodayKey()
 
   const visibleTasks = useMemo(() => {
     return tasks.filter(task => {

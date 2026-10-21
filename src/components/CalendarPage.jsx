@@ -4,6 +4,7 @@ import {
   Clock, MapPin, Pencil, Trash2, X, CheckCircle2,
   Circle, ListTodo, CalendarCheck
 } from 'lucide-react'
+import useTodayKey from '../lib/useTodayKey.js'
 
 const CATEGORIES = [
   'Personal',
@@ -94,7 +95,7 @@ export default function CalendarPage({
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(blankEvent)
 
-  const today = dateKey(new Date())
+  const today = useTodayKey()
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(
