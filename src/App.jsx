@@ -16,12 +16,13 @@ import AuthPage from './components/AuthPage.jsx'
 import ProfileMenu from './components/ProfileMenu.jsx'
 
 import useStoredState from './lib/useStoredState.js'
+import useTasks from './lib/useTasks.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 import {
-  normalizeTasks, normalizeEvents, normalizeNotes, normalizeHabits,
+  normalizeEvents, normalizeNotes, normalizeHabits,
   normalizeFocusSessions, normalizeGoals,
 } from './lib/data.js'
 
@@ -101,7 +102,16 @@ export default function App() {
 function Workspace({ user, onUpdateProfile, onLogout }) {
   const key = name => dataKey(user.id, name)
 
-  const [tasks, setTasks] = useStoredState(key('tasks'), [], normalizeTasks)
+  const {
+    tasks,
+    loading: tasksLoading,
+    error: tasksError,
+    createTask,
+    updateTask,
+    toggleTask: toggleTaskRemote,
+    deleteTask: deleteTaskRemote,
+    replaceTasks,
+  } = useTasks(user.id)
   const [events, setEvents] = useStoredState(key('events'), [], normalizeEvents)
   const [notes, setNotes] = useStoredState(key('notes'), [], normalizeNotes)
   const [habits, setHabits] = useStoredState(key('habits'), [], normalizeHabits)
@@ -158,35 +168,33 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
   const todayDueTasks = tasks.filter(task => task.dueDate === today && !task.done)
 
-  function addTask(e) {
+  async function addTask(e) {
     e.preventDefault()
     const title = newTask.trim()
     if (!title) return
-    setTasks(current => [
-      ...current,
-      {
-        id: crypto.randomUUID(),
+
+    try {
+      await createTask({
         title,
         description: '',
         priority: 'Medium',
         dueDate: today,
-        time: today,
         done: false,
-      },
-    ])
-    setNewTask('')
-    setShowAddTask(false)
+      })
+      setNewTask('')
+      setShowAddTask(false)
+    } catch {
+      // The shared task error banner will show the API error.
+    }
   }
 
   function toggleTask(id) {
-    setTasks(current =>
-      current.map(task => task.id === id ? { ...task, done: !task.done } : task)
-    )
+    toggleTaskRemote(id).catch(() => {})
   }
 
   function deleteTask(id) {
     if (!window.confirm('Delete this task?')) return
-    setTasks(current => current.filter(task => task.id !== id))
+    deleteTaskRemote(id).catch(() => {})
   }
 
   function toggleHabit(id) {
@@ -341,6 +349,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
 
         {activePage === 'Home' ? (
           <>
+            {tasksError && <div className="auth-error" role="alert">{tasksError}</div>}
             <div className="stats-grid">
               <StatCard icon={CheckSquare} title="Tasks Completed"
                 value={`${completed} / ${tasks.length}`}
@@ -549,13 +558,21 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             </div>
           </>
         ) : activePage === 'Tasks' ? (
-          <TasksPage tasks={tasks} setTasks={setTasks} />
+          <TasksPage
+            tasks={tasks}
+            loading={tasksLoading}
+            error={tasksError}
+            onCreateTask={createTask}
+            onUpdateTask={updateTask}
+            onToggleTask={toggleTaskRemote}
+            onDeleteTask={deleteTaskRemote}
+          />
         ) : activePage === 'Calendar' ? (
           <CalendarPage
             key={calendarDate || 'today'}
             initialDate={calendarDate}
             tasks={tasks}
-            setTasks={setTasks}
+            onToggleTask={toggleTaskRemote}
             events={events}
             setEvents={setEvents}
           />
@@ -587,7 +604,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             onUpdateProfile={onUpdateProfile}
             data={{ tasks, events, notes, habits, focusSessions, goals }}
             setters={{
-              tasks: setTasks,
+              tasks: replaceTasks,
               events: setEvents,
               notes: setNotes,
               habits: setHabits,

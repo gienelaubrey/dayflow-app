@@ -14,13 +14,22 @@ const emptyForm = {
 
 const filters = ['All', 'Today', 'Upcoming', 'Completed', 'Overdue']
 
-export default function TasksPage({ tasks, setTasks }) {
+export default function TasksPage({
+  tasks,
+  loading = false,
+  error = '',
+  onCreateTask,
+  onUpdateTask,
+  onToggleTask,
+  onDeleteTask,
+}) {
   const [filter, setFilter] = useState('All')
   const [search, setSearch] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('All')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [busy, setBusy] = useState(false)
 
   const today = useTodayKey()
 
@@ -79,45 +88,40 @@ export default function TasksPage({ tasks, setTasks }) {
     setShowForm(true)
   }
 
-  function saveTask(event) {
+  async function saveTask(event) {
     event.preventDefault()
     const title = form.title.trim()
+    if (!title || busy) return
 
-    if (!title) return
+    setBusy(true)
+    try {
+      if (editingId !== null) {
+        await onUpdateTask(editingId, { ...form, title })
+      } else {
+        await onCreateTask({ ...form, title, done: false })
+      }
 
-    if (editingId !== null) {
-      setTasks(current => current.map(task =>
-        task.id === editingId
-          ? { ...task, ...form, title, time: form.dueDate || 'No date set' }
-          : task
-      ))
-    } else {
-      setTasks(current => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          ...form,
-          title,
-          done: false,
-          time: form.dueDate || 'No date set',
-        },
-      ])
+      setShowForm(false)
+      setEditingId(null)
+      setForm(emptyForm)
+    } catch {
+      // The task error banner is populated by the shared API hook.
+    } finally {
+      setBusy(false)
     }
-
-    setShowForm(false)
-    setEditingId(null)
-    setForm(emptyForm)
   }
 
   function toggleTask(id) {
-    setTasks(current => current.map(task =>
-      task.id === id ? { ...task, done: !task.done } : task
-    ))
+    onToggleTask(id).catch(() => {})
   }
 
-  function deleteTask(id) {
+  async function deleteTask(id) {
     if (!window.confirm('Delete this task?')) return
-    setTasks(current => current.filter(task => task.id !== id))
+    try {
+      await onDeleteTask(id)
+    } catch {
+      // The task error banner is populated by the shared API hook.
+    }
   }
 
   return (
@@ -132,6 +136,8 @@ export default function TasksPage({ tasks, setTasks }) {
           <Plus size={17} /> New Task
         </button>
       </header>
+
+      {error && <div className="auth-error" role="alert">{error}</div>}
 
       <div className="task-stats">
         <div className="task-stat-card">
@@ -235,8 +241,8 @@ export default function TasksPage({ tasks, setTasks }) {
             <div className="editor-actions">
               <button type="button" className="cancel-button"
                 onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="pink-button" type="submit">
-                {editingId !== null ? 'Save changes' : 'Create task'}
+              <button className="pink-button" type="submit" disabled={busy}>
+                {busy ? 'Saving…' : editingId !== null ? 'Save changes' : 'Create task'}
               </button>
             </div>
           </form>
@@ -275,7 +281,13 @@ export default function TasksPage({ tasks, setTasks }) {
             </article>
           ))}
 
-          {visibleTasks.length === 0 && (
+          {loading && tasks.length === 0 ? (
+            <div className="task-empty">
+              <ListTodo size={35} />
+              <h3>Loading tasks…</h3>
+              <p>Syncing your task list with DayFlow.</p>
+            </div>
+          ) : visibleTasks.length === 0 && (
             <div className="task-empty">
               <ListTodo size={35} />
               <h3>No tasks found</h3>

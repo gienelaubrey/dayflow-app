@@ -57,7 +57,7 @@ function migrateLegacyLocalData(user) {
   }
 }
 
-async function apiRequest(path, options = {}) {
+export async function apiRequest(path, options = {}) {
   let response
 
   try {

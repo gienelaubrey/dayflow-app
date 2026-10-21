@@ -80,7 +80,7 @@ function formatTime(time) {
 
 export default function CalendarPage({
   tasks = [],
-  setTasks,
+  onToggleTask,
   events = [],
   setEvents,
   initialDate = null,
@@ -224,13 +224,8 @@ export default function CalendarPage({
   }
 
   function toggleTask(id) {
-    if (!setTasks) return
-
-    setTasks(current => current.map(task =>
-      task.id === id
-        ? { ...task, done: !task.done }
-        : task
-    ))
+    if (!onToggleTask) return
+    onToggleTask(id).catch(() => {})
   }
 
   const headingDate = parseDate(selectedDate)

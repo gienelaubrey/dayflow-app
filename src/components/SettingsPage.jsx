@@ -106,20 +106,28 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
       )
       if (!ok) return
 
-      incoming.forEach(({ key }) => setters[key](normalizedData[key]))
+      await Promise.all(
+        incoming.map(({ key }) => Promise.resolve(setters[key](normalizedData[key])))
+      )
       showMessage('success', 'Backup restored.')
     } catch {
       showMessage('error', 'That file couldn’t be read. Choose a backup exported from DayFlow.')
     }
   }
 
-  function resetData() {
+  async function resetData() {
     const ok = window.confirm(
       'Delete all tasks, events, notes, habits, focus sessions and goals? This cannot be undone.'
     )
     if (!ok) return
-    DATA_LABELS.forEach(({ key }) => setters[key]([]))
-    showMessage('success', 'All data cleared.')
+    try {
+      await Promise.all(
+        DATA_LABELS.map(({ key }) => Promise.resolve(setters[key]([])))
+      )
+      showMessage('success', 'All data cleared.')
+    } catch (err) {
+      showMessage('error', err?.message || 'Some data could not be cleared.')
+    }
   }
 
   return (
@@ -129,7 +137,7 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
           <p className="settings-eyebrow">MAKE IT YOURS</p>
           <h1>Settings<span>.</span></h1>
           <p className="settings-subtitle">
-            Your profile and your data, all stored on this device.
+            Manage your profile, backups, and DayFlow data.
           </p>
         </div>
       </header>
