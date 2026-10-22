@@ -19,13 +19,12 @@ import useStoredState from './lib/useStoredState.js'
 import useTasks from './lib/useTasks.js'
 import useEvents from './lib/useEvents.js'
 import useNotes from './lib/useNotes.js'
+import useHabits from './lib/useHabits.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
-import {
-  normalizeHabits, normalizeFocusSessions, normalizeGoals,
-} from './lib/data.js'
+import { normalizeFocusSessions, normalizeGoals } from './lib/data.js'
 
 const navItems = [
   { label: 'Home', icon: House },
@@ -131,7 +130,15 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     deleteNote: deleteNoteRemote,
     replaceNotes,
   } = useNotes(user.id)
-  const [habits, setHabits] = useStoredState(key('habits'), [], normalizeHabits)
+  const {
+    habits,
+    loading: habitsLoading,
+    error: habitsError,
+    createHabit,
+    toggleHabit: toggleHabitRemote,
+    deleteHabit: deleteHabitRemote,
+    replaceHabits,
+  } = useHabits(user.id)
   const [focusSessions, setFocusSessions] = useStoredState(
     key('focus-sessions'), [], normalizeFocusSessions
   )
@@ -215,16 +222,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
   }
 
   function toggleHabit(id) {
-    setHabits(current => current.map(habit => {
-      if (habit.id !== id) return habit
-      const dates = habit.completedDates || []
-      return {
-        ...habit,
-        completedDates: dates.includes(today)
-          ? dates.filter(date => date !== today)
-          : [...dates, today],
-      }
-    }))
+    toggleHabitRemote(id, today).catch(() => {})
   }
 
   async function saveQuickNote(e) {
@@ -367,6 +365,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             {tasksError && <div className="auth-error" role="alert">{tasksError}</div>}
             {eventsError && <div className="auth-error" role="alert">{eventsError}</div>}
             {notesError && <div className="auth-error" role="alert">{notesError}</div>}
+            {habitsError && <div className="auth-error" role="alert">{habitsError}</div>}
             <div className="stats-grid">
               <StatCard icon={CheckSquare} title="Tasks Completed"
                 value={`${completed} / ${tasks.length}`}
@@ -610,7 +609,11 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
           <HabitsFocusPage
             view="habits"
             habits={habits}
-            setHabits={setHabits}
+            loading={habitsLoading}
+            error={habitsError}
+            onCreateHabit={createHabit}
+            onToggleHabit={toggleHabitRemote}
+            onDeleteHabit={deleteHabitRemote}
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
             focusTimer={focusTimer}
@@ -619,7 +622,11 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
           <HabitsFocusPage
             view="focus"
             habits={habits}
-            setHabits={setHabits}
+            loading={habitsLoading}
+            error={habitsError}
+            onCreateHabit={createHabit}
+            onToggleHabit={toggleHabitRemote}
+            onDeleteHabit={deleteHabitRemote}
             focusSessions={focusSessions}
             setFocusSessions={setFocusSessions}
             focusTimer={focusTimer}
@@ -635,7 +642,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
               tasks: replaceTasks,
               events: replaceEvents,
               notes: replaceNotes,
-              habits: setHabits,
+              habits: replaceHabits,
               focusSessions: setFocusSessions,
               goals: setGoals,
             }}

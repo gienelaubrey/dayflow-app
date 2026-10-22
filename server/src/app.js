@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js'
 import taskRoutes from './routes/tasks.js'
 import eventRoutes from './routes/events.js'
 import noteRoutes from './routes/notes.js'
+import habitRoutes from './routes/habits.js'
 import { prisma } from './lib/prisma.js'
 
 export const app = express()
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/events', eventRoutes)
 app.use('/api/notes', noteRoutes)
+app.use('/api/habits', habitRoutes)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found.' })

@@ -56,7 +56,11 @@ function formatDuration(totalSeconds) {
 
 export default function HabitsFocusPage({
   habits = [],
-  setHabits,
+  loading = false,
+  error = '',
+  onCreateHabit,
+  onToggleHabit,
+  onDeleteHabit,
   focusSessions = [],
   setFocusSessions,
   focusTimer,
@@ -65,6 +69,7 @@ export default function HabitsFocusPage({
   const [habitName, setHabitName] = useState('')
   const [habitEmoji, setHabitEmoji] = useState('✨')
   const [showHabitForm, setShowHabitForm] = useState(false)
+  const [savingHabit, setSavingHabit] = useState(false)
   const today = useTodayKey()
 
   const {
@@ -96,52 +101,35 @@ export default function HabitsFocusPage({
     .reduce((total, session) => total + session.minutes, 0)
 
   function toggleHabit(habitId) {
-    setHabits((previous) =>
-      previous.map((habit) => {
-        if (habit.id !== habitId) return habit
-
-        const dates = habit.completedDates || []
-        const isDone = dates.includes(today)
-
-        return {
-          ...habit,
-          completedDates: isDone
-            ? dates.filter((date) => date !== today)
-            : [...dates, today],
-        }
-      })
-    )
+    Promise.resolve(onToggleHabit?.(habitId, today)).catch(() => {})
   }
 
-  function addHabit(event) {
+  async function addHabit(event) {
     event.preventDefault()
 
     const name = habitName.trim()
-    if (!name) return
+    if (!name || savingHabit) return
 
-    setHabits((previous) => [
-      ...previous,
-      {
-        id: crypto.randomUUID(),
+    setSavingHabit(true)
+    try {
+      await onCreateHabit?.({
         name,
         icon: habitEmoji,
-        color: HABIT_COLORS[previous.length % HABIT_COLORS.length],
-        completedDates: [],
-        createdAt: new Date().toISOString(),
-      },
-    ])
-
-    setHabitName('')
-    setHabitEmoji('✨')
-    setShowHabitForm(false)
+        color: HABIT_COLORS[habits.length % HABIT_COLORS.length],
+      })
+      setHabitName('')
+      setHabitEmoji('✨')
+      setShowHabitForm(false)
+    } catch {
+      // The shared error banner below displays the API error.
+    } finally {
+      setSavingHabit(false)
+    }
   }
 
   function deleteHabit(id) {
     if (!window.confirm('Delete this habit and its history?')) return
-
-    setHabits((previous) =>
-      previous.filter((habit) => habit.id !== id)
-    )
+    Promise.resolve(onDeleteHabit?.(id)).catch(() => {})
   }
 
   const weekStats = week.map((day) => {
@@ -192,6 +180,8 @@ export default function HabitsFocusPage({
           })}
         </div>
       </header>
+
+      {error && <div className="auth-error" role="alert">{error}</div>}
     
     {view !== 'focus' && (
       <section className="habits-stats">
@@ -278,14 +268,17 @@ export default function HabitsFocusPage({
               <button
                 className="habits-submit-button"
                 type="submit"
-                disabled={!habitName.trim()}
+                disabled={!habitName.trim() || savingHabit}
               >
-                Save habit
+                {savingHabit ? 'Saving…' : 'Save habit'}
               </button>
             </form>
           )}
 
           <div className="habit-list">
+            {loading && habits.length === 0 && (
+              <p className="empty-state">Loading habits…</p>
+            )}
             {habits.map((habit) => {
               const done = (habit.completedDates || []).includes(today)
               const streak = habitStreak(habit)
@@ -334,7 +327,7 @@ export default function HabitsFocusPage({
               )
             })}
 
-            {habits.length === 0 && (
+            {!loading && habits.length === 0 && (
               <div className="habits-empty">
                 <span>🌷</span>
                 <h3>Start with one small habit</h3>
