@@ -223,7 +223,7 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
           <span className="settings-card-icon lavender"><Download size={19} /></span>
           <div>
             <h2>Your data</h2>
-            <p>Everything lives in this browser. Download a backup to keep it safe or move it to another device.</p>
+            <p>Download a portable backup of your DayFlow data or restore one you saved earlier.</p>
           </div>
         </div>
 

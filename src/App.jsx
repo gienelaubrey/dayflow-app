@@ -17,12 +17,13 @@ import ProfileMenu from './components/ProfileMenu.jsx'
 
 import useStoredState from './lib/useStoredState.js'
 import useTasks from './lib/useTasks.js'
+import useEvents from './lib/useEvents.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 import {
-  normalizeEvents, normalizeNotes, normalizeHabits,
+  normalizeNotes, normalizeHabits,
   normalizeFocusSessions, normalizeGoals,
 } from './lib/data.js'
 
@@ -112,7 +113,15 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     deleteTask: deleteTaskRemote,
     replaceTasks,
   } = useTasks(user.id)
-  const [events, setEvents] = useStoredState(key('events'), [], normalizeEvents)
+  const {
+    events,
+    loading: eventsLoading,
+    error: eventsError,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    replaceEvents,
+  } = useEvents(user.id)
   const [notes, setNotes] = useStoredState(key('notes'), [], normalizeNotes)
   const [habits, setHabits] = useStoredState(key('habits'), [], normalizeHabits)
   const [focusSessions, setFocusSessions] = useStoredState(
@@ -574,7 +583,11 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             tasks={tasks}
             onToggleTask={toggleTaskRemote}
             events={events}
-            setEvents={setEvents}
+            loading={eventsLoading}
+            error={eventsError}
+            onCreateEvent={createEvent}
+            onUpdateEvent={updateEvent}
+            onDeleteEvent={deleteEvent}
           />
         ) : activePage === 'Notes' ? (
           <NotesPage notes={notes} setNotes={setNotes} />
@@ -605,7 +618,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             data={{ tasks, events, notes, habits, focusSessions, goals }}
             setters={{
               tasks: replaceTasks,
-              events: setEvents,
+              events: replaceEvents,
               notes: setNotes,
               habits: setHabits,
               focusSessions: setFocusSessions,

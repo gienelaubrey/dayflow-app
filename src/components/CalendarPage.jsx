@@ -82,7 +82,11 @@ export default function CalendarPage({
   tasks = [],
   onToggleTask,
   events = [],
-  setEvents,
+  loading = false,
+  error = '',
+  onCreateEvent,
+  onUpdateEvent,
+  onDeleteEvent,
   initialDate = null,
 }) {
   const [selectedDate, setSelectedDate] = useState(initialDate || dateKey(new Date()))
@@ -94,6 +98,9 @@ export default function CalendarPage({
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(blankEvent)
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+  const [actionError, setActionError] = useState('')
 
   const today = useTodayKey()
 
@@ -182,8 +189,9 @@ export default function CalendarPage({
     setShowForm(true)
   }
 
-  function saveEvent(event) {
+  async function saveEvent(event) {
     event.preventDefault()
+    if (saving) return
 
     const title = form.title.trim()
     if (!title || !form.date) return
@@ -193,34 +201,47 @@ export default function CalendarPage({
       return
     }
 
-    if (editingId !== null) {
-      setEvents(current => current.map(item =>
-        item.id === editingId
-          ? { ...item, ...form, title }
-          : item
-      ))
-    } else {
-      setEvents(current => [
-        ...current,
-        {
-          id: crypto.randomUUID(),
-          ...form,
-          title,
-        },
-      ])
-    }
+    setSaving(true)
+    setActionError('')
 
-    setSelectedDate(form.date)
-    const date = parseDate(form.date)
-    setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1))
-    setShowForm(false)
-    setEditingId(null)
-    setForm(blankEvent)
+    try {
+      const payload = { ...form, title }
+
+      if (editingId !== null) {
+        if (!onUpdateEvent) throw new Error('Calendar updates are unavailable.')
+        await onUpdateEvent(editingId, payload)
+      } else {
+        if (!onCreateEvent) throw new Error('Calendar creation is unavailable.')
+        await onCreateEvent(payload)
+      }
+
+      setSelectedDate(form.date)
+      const date = parseDate(form.date)
+      setVisibleMonth(new Date(date.getFullYear(), date.getMonth(), 1))
+      setShowForm(false)
+      setEditingId(null)
+      setForm(blankEvent)
+    } catch (err) {
+      setActionError(err?.message || 'Could not save the calendar event.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function deleteEvent(id) {
+  async function deleteEvent(id) {
     if (!window.confirm('Delete this calendar event?')) return
-    setEvents(current => current.filter(event => event.id !== id))
+    if (!onDeleteEvent) return
+
+    setDeletingId(id)
+    setActionError('')
+
+    try {
+      await onDeleteEvent(id)
+    } catch (err) {
+      setActionError(err?.message || 'Could not delete the calendar event.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   function toggleTask(id) {
@@ -245,6 +266,16 @@ export default function CalendarPage({
           <Plus size={17} /> New event
         </button>
       </header>
+
+      {loading && (
+        <div className="settings-message" role="status">Loading calendar events…</div>
+      )}
+
+      {(error || actionError) && (
+        <div className="settings-message error" role="alert">
+          {actionError || error}
+        </div>
+      )}
 
       <div className="calendar-summary">
         <article className="calendar-summary-card">
@@ -436,6 +467,7 @@ export default function CalendarPage({
                     <button onClick={() => openEditForm(event)}
                       aria-label={`Edit ${event.title}`}><Pencil size={14} /></button>
                     <button onClick={() => deleteEvent(event.id)}
+                      disabled={deletingId === event.id}
                       aria-label={`Delete ${event.title}`}><Trash2 size={14} /></button>
                   </div>
                 </div>
@@ -494,6 +526,7 @@ export default function CalendarPage({
                 <h3>{editingId !== null ? 'Edit event' : 'New calendar event'}</h3>
               </div>
               <button type="button" className="icon-button"
+                disabled={saving}
                 onClick={() => setShowForm(false)} aria-label="Close">
                 <X size={19} />
               </button>
@@ -553,9 +586,12 @@ export default function CalendarPage({
 
             <div className="calendar-form-actions">
               <button type="button" className="cancel-button"
+                disabled={saving}
                 onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="pink-button" type="submit">
-                {editingId !== null ? 'Save changes' : 'Create event'}
+              <button className="pink-button" type="submit" disabled={saving}>
+                {saving
+                  ? (editingId !== null ? 'Saving…' : 'Creating…')
+                  : (editingId !== null ? 'Save changes' : 'Create event')}
               </button>
             </div>
           </form>
