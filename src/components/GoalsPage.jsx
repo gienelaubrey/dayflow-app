@@ -20,11 +20,20 @@ const emptyGoal = {
   progress: 0,
 }
 
-export default function GoalsPage({ goals = [], setGoals }) {
+export default function GoalsPage({
+  goals = [],
+  loading = false,
+  error = '',
+  onCreateGoal,
+  onUpdateGoal,
+  onDeleteGoal,
+}) {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyGoal)
   const [filter, setFilter] = useState('All')
+  const [busy, setBusy] = useState(false)
+  const [progressDrafts, setProgressDrafts] = useState({})
   const today = useTodayKey()
 
   const categories = ['Personal', 'Career', 'Health', 'Learning', 'Finance']
@@ -49,9 +58,9 @@ export default function GoalsPage({ goals = [], setGoals }) {
     setShowForm(true)
   }
 
-  function saveGoal(event) {
+  async function saveGoal(event) {
     event.preventDefault()
-    if (!form.title.trim()) return
+    if (!form.title.trim() || busy) return
 
     const cleanGoal = {
       ...form,
@@ -60,39 +69,56 @@ export default function GoalsPage({ goals = [], setGoals }) {
       progress: Number(form.progress),
     }
 
-    if (editingId !== null) {
-      setGoals(current =>
-        current.map(goal =>
-          goal.id === editingId ? { ...goal, ...cleanGoal } : goal
-        )
-      )
-    } else {
-      setGoals(current => [
-        ...current,
-        {
-          ...cleanGoal,
-          id: crypto.randomUUID(),
-          createdAt: new Date().toISOString(),
-        },
-      ])
+    setBusy(true)
+    try {
+      if (editingId !== null) {
+        await onUpdateGoal(editingId, cleanGoal)
+      } else {
+        await onCreateGoal(cleanGoal)
+      }
+
+      setShowForm(false)
+      setEditingId(null)
+      setForm(emptyGoal)
+    } catch {
+      // The shared Goals API hook supplies the error banner.
+    } finally {
+      setBusy(false)
     }
-
-    setShowForm(false)
-    setEditingId(null)
-    setForm(emptyGoal)
   }
 
-  function deleteGoal(id) {
+  async function deleteGoal(id) {
     if (!window.confirm('Delete this goal? This cannot be undone.')) return
-    setGoals(current => current.filter(goal => goal.id !== id))
+    try {
+      await onDeleteGoal(id)
+      setProgressDrafts(current => {
+        const next = { ...current }
+        delete next[id]
+        return next
+      })
+    } catch {
+      // The shared Goals API hook supplies the error banner.
+    }
   }
 
-  function updateProgress(id, progress) {
-    setGoals(current =>
-      current.map(goal =>
-        goal.id === id ? { ...goal, progress: Number(progress) } : goal
-      )
-    )
+  function draftProgress(id, progress) {
+    setProgressDrafts(current => ({ ...current, [id]: Number(progress) }))
+  }
+
+  async function commitProgress(goal) {
+    if (!Object.hasOwn(progressDrafts, goal.id)) return
+    const progress = progressDrafts[goal.id]
+
+    try {
+      await onUpdateGoal(goal.id, { progress })
+      setProgressDrafts(current => {
+        const next = { ...current }
+        delete next[goal.id]
+        return next
+      })
+    } catch {
+      // Keep the draft visible so the user can retry after the API error.
+    }
   }
 
   const visibleGoals = goals.filter(goal =>
@@ -117,6 +143,11 @@ export default function GoalsPage({ goals = [], setGoals }) {
           <Plus size={17} /> Add goal
         </button>
       </header>
+
+      {error && <div className="auth-error" role="alert">{error}</div>}
+      {loading && goals.length === 0 && (
+        <p className="empty-state">Loading your goals…</p>
+      )}
 
       <section className="goals-stats">
         <article className="goals-stat">
@@ -209,8 +240,8 @@ export default function GoalsPage({ goals = [], setGoals }) {
             <button type="button" className="cancel-button" onClick={() => setShowForm(false)}>
               Cancel
             </button>
-            <button type="submit" className="pink-button">
-              <Check size={16} /> Save goal
+            <button type="submit" className="pink-button" disabled={busy}>
+              <Check size={16} /> {busy ? 'Saving…' : 'Save goal'}
             </button>
           </div>
         </form>
@@ -236,9 +267,9 @@ export default function GoalsPage({ goals = [], setGoals }) {
       {visibleGoals.length > 0 ? (
         <section className="goals-grid">
           {visibleGoals.map(goal => {
-            const isComplete = goal.progress >= 100
-            const overdue = goal.targetDate &&
-              goal.targetDate < today && !isComplete
+            const displayedProgress = progressDrafts[goal.id] ?? goal.progress
+            const isComplete = displayedProgress >= 100
+            const overdue = goal.targetDate && goal.targetDate < today && !isComplete
 
             return (
               <article className="goal-card" key={goal.id}>
@@ -271,18 +302,18 @@ export default function GoalsPage({ goals = [], setGoals }) {
 
                 <div className="goal-progress-label">
                   <span>Progress</span>
-                  <strong>{goal.progress}%</strong>
+                  <strong>{displayedProgress}%</strong>
                 </div>
 
                 <div
                   className="goal-progress-track"
                   role="progressbar"
-                  aria-valuenow={goal.progress}
+                  aria-valuenow={displayedProgress}
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-label={`${goal.title} progress`}
                 >
-                  <div style={{ width: `${goal.progress}%` }} />
+                  <div style={{ width: `${displayedProgress}%` }} />
                 </div>
 
                 <label className="goal-progress-control">
@@ -292,8 +323,11 @@ export default function GoalsPage({ goals = [], setGoals }) {
                     min="0"
                     max="100"
                     step="5"
-                    value={goal.progress}
-                    onChange={e => updateProgress(goal.id, e.target.value)}
+                    value={displayedProgress}
+                    onChange={e => draftProgress(goal.id, e.target.value)}
+                    onPointerUp={() => commitProgress(goal)}
+                    onKeyUp={() => commitProgress(goal)}
+                    onBlur={() => commitProgress(goal)}
                     aria-label={`Update progress for ${goal.title}`}
                   />
                 </label>
@@ -312,7 +346,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
             )
           })}
         </section>
-      ) : (
+      ) : !loading ? (
         <section className="goals-empty">
           <span>🌷</span>
           <h3>{goals.length ? 'No goals in this filter' : 'Every big achievement starts small'}</h3>
@@ -327,7 +361,7 @@ export default function GoalsPage({ goals = [], setGoals }) {
             </button>
           )}
         </section>
-      )}
+      ) : null}
     </main>
   )
 }

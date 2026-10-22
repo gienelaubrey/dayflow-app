@@ -15,17 +15,16 @@ import SettingsPage from './components/SettingsPage.jsx'
 import AuthPage from './components/AuthPage.jsx'
 import ProfileMenu from './components/ProfileMenu.jsx'
 
-import useStoredState from './lib/useStoredState.js'
 import useTasks from './lib/useTasks.js'
 import useEvents from './lib/useEvents.js'
 import useNotes from './lib/useNotes.js'
 import useHabits from './lib/useHabits.js'
 import useFocusSessions from './lib/useFocusSessions.js'
+import useGoals from './lib/useGoals.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
-import { normalizeGoals } from './lib/data.js'
 
 const navItems = [
   { label: 'Home', icon: House },
@@ -147,7 +146,15 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     createFocusSession,
     replaceFocusSessions,
   } = useFocusSessions(user.id)
-  const [goals, setGoals] = useStoredState(key('goals'), [], normalizeGoals)
+  const {
+    goals,
+    loading: goalsLoading,
+    error: goalsError,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    replaceGoals,
+  } = useGoals(user.id)
   const focusTimer = useFocusTimer(key('focus-timer'), createFocusSession)
 
   const [activePage, setActivePage] = useState('Home')
@@ -639,7 +646,14 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             focusTimer={focusTimer}
           />
         ) : activePage === 'Goals' ? (
-          <GoalsPage goals={goals} setGoals={setGoals} />
+          <GoalsPage
+            goals={goals}
+            loading={goalsLoading}
+            error={goalsError}
+            onCreateGoal={createGoal}
+            onUpdateGoal={updateGoal}
+            onDeleteGoal={deleteGoal}
+          />
         ) : (
           <SettingsPage
             user={user}
@@ -651,7 +665,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
               notes: replaceNotes,
               habits: replaceHabits,
               focusSessions: replaceFocusSessions,
-              goals: setGoals,
+              goals: replaceGoals,
             }}
           />
         )}
