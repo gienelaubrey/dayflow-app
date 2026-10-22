@@ -115,3 +115,40 @@
 .auth-forgot-link:hover {
   text-decoration: underline;
 }
+
+/* Dark-theme overrides for email verification / password reset surfaces. */
+html[data-theme='dark'] .auth-verify-icon {
+  border-color: #573747;
+  background: linear-gradient(145deg, #3a2230, #2d1d26);
+  color: #f0a1bd;
+  box-shadow: 0 8px 22px rgba(0,0,0,.16);
+}
+
+html[data-theme='dark'] .auth-heading strong {
+  color: #f2cedc;
+}
+
+html[data-theme='dark'] .auth-notice {
+  border-color: #315345;
+  background: #1d352c;
+  color: #9bd7ba;
+}
+
+html[data-theme='dark'] .auth-otp-input {
+  color: #ffadca !important;
+  background: #1b141a !important;
+  border-color: #533b47 !important;
+}
+
+html[data-theme='dark'] .auth-otp-input::placeholder {
+  color: #816b76;
+}
+
+html[data-theme='dark'] .auth-resend,
+html[data-theme='dark'] .auth-verify-links {
+  color: #b9a5af;
+}
+
+html[data-theme='dark'] .auth-resend button:disabled {
+  color: #75636d;
+}

@@ -23,6 +23,7 @@ import useFocusSessions from './lib/useFocusSessions.js'
 import useGoals from './lib/useGoals.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
+import useTheme from './lib/useTheme.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 
@@ -73,6 +74,7 @@ function StatCard({ icon: Icon, title, value, detail, percent }) {
 
 // Decides whether to show the login screen or the app.
 export default function App() {
+  const theme = useTheme()
   const [user, setUser] = useState(undefined) // undefined = still checking the session
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export default function App() {
     <Workspace
       key={user.id}
       user={user}
+      theme={theme}
       onUpdateProfile={async patch => setUser(await updateProfile(user.id, patch))}
       onLogout={async () => {
         await logout()
@@ -99,7 +102,7 @@ export default function App() {
   )
 }
 
-function Workspace({ user, onUpdateProfile, onLogout }) {
+function Workspace({ user, theme, onUpdateProfile, onLogout }) {
   const key = name => dataKey(user.id, name)
 
   const {
@@ -657,6 +660,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
         ) : (
           <SettingsPage
             user={user}
+            theme={theme}
             onUpdateProfile={onUpdateProfile}
             data={{ tasks, events, notes, habits, focusSessions, goals }}
             setters={{

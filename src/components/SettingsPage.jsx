@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import {
   User, Download, Upload, Trash2, Check, Camera, Mail,
   CheckSquare, CalendarDays, NotebookPen, Sprout, Timer, Target,
+  Sun, Moon, Monitor,
 } from 'lucide-react'
 import Avatar from './Avatar.jsx'
 import { fileToAvatar } from '../lib/image.js'
@@ -16,7 +17,7 @@ const DATA_LABELS = [
   { key: 'goals', label: 'Goals', icon: Target },
 ]
 
-export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
+export default function SettingsPage({ user, theme, onUpdateProfile, data, setters }) {
   const [name, setName] = useState(user.name || '')
   const [saved, setSaved] = useState(false)
   const [message, setMessage] = useState(null) // { type: 'success' | 'error', text }
@@ -216,6 +217,38 @@ export default function SettingsPage({ user, onUpdateProfile, data, setters }) {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="settings-card">
+        <div className="settings-card-heading">
+          <span className="settings-card-icon theme-icon">
+            {theme.resolvedTheme === 'dark' ? <Moon size={19} /> : <Sun size={19} />}
+          </span>
+          <div>
+            <h2>Appearance</h2>
+            <p>Choose how DayFlow looks on this device. System follows your device appearance automatically.</p>
+          </div>
+        </div>
+
+        <div className="theme-options" role="group" aria-label="Color theme">
+          {[
+            { value: 'light', label: 'Light', icon: Sun },
+            { value: 'dark', label: 'Dark', icon: Moon },
+            { value: 'system', label: 'System', icon: Monitor },
+          ].map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              type="button"
+              className={`theme-option ${theme.theme === value ? 'active' : ''}`}
+              onClick={() => theme.setTheme(value)}
+              aria-pressed={theme.theme === value}
+            >
+              <Icon size={18} />
+              <span>{label}</span>
+              {theme.theme === value && <Check size={16} className="theme-option-check" />}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="settings-card">

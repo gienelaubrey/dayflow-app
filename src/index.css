@@ -2374,3 +2374,560 @@ label > svg,
     display: block;
   }
 }
+
+/* =======================================================
+   DAYFLOW APPEARANCE + DARK THEME
+   Device-local preference: Light / Dark / System.
+======================================================= */
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.theme-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid #eadfe5;
+  border-radius: 12px;
+  background: #fffafd;
+  color: #66505e;
+  font-size: var(--text-base);
+  font-weight: 750;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.theme-option:hover {
+  transform: translateY(-1px);
+  border-color: #e5b6c9;
+  background: #fff3f8;
+  color: #a94f75;
+}
+
+.theme-option.active {
+  border-color: #dc89aa;
+  background: linear-gradient(145deg, #fff0f6, #fbe1eb);
+  color: #a93f6a;
+  box-shadow: inset 0 0 0 1px rgba(216,79,125,.06), 0 7px 18px rgba(127,48,82,.08);
+}
+
+.theme-option-check {
+  position: absolute;
+  right: 11px;
+  color: var(--pink-dark);
+}
+
+.settings-card-icon.theme-icon {
+  background: linear-gradient(145deg, #fff1f6, #f2eafa);
+  color: #aa5d82;
+}
+
+html[data-theme='dark'] {
+  --pink: #ee7ea8;
+  --pink-dark: #f09ab9;
+  --pink-light: #472735;
+  --pink-pale: #30202a;
+  --border: #493440;
+  --muted: #b7a4af;
+  background: #140f14;
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] body {
+  color: #f1e6ec;
+  background: radial-gradient(circle at 80% -10%, #321b29 0, transparent 35%), #140f14;
+}
+
+html[data-theme='dark'] .app-shell,
+html[data-theme='dark'] .main-content,
+html[data-theme='dark'] .task-manager,
+html[data-theme='dark'] .calendar-page,
+html[data-theme='dark'] .notes-page,
+html[data-theme='dark'] .habits-page,
+html[data-theme='dark'] .goals-page,
+html[data-theme='dark'] .settings-page {
+  color: #f1e6ec;
+}
+
+html[data-theme='dark'] .sidebar {
+  background: linear-gradient(165deg, #26161f, #20151c 72%, #181117);
+  border-right-color: #432c38;
+  box-shadow: 14px 0 40px rgba(0,0,0,.16);
+}
+
+html[data-theme='dark'] .brand h1,
+html[data-theme='dark'] .welcome h2,
+html[data-theme='dark'] .task-page-header h1,
+html[data-theme='dark'] .calendar-page-header h1,
+html[data-theme='dark'] .notes-header h1,
+html[data-theme='dark'] .habits-header h1,
+html[data-theme='dark'] .goals-header h1,
+html[data-theme='dark'] .settings-header h1,
+html[data-theme='dark'] .panel-heading h3,
+html[data-theme='dark'] .task-empty h3,
+html[data-theme='dark'] .calendar-month-title h3,
+html[data-theme='dark'] .notes-empty h2,
+html[data-theme='dark'] .notes-modal-header h2,
+html[data-theme='dark'] .habits-section-heading h2,
+html[data-theme='dark'] .habit-details h3,
+html[data-theme='dark'] .focus-heading h2,
+html[data-theme='dark'] .goals-list-heading h2,
+html[data-theme='dark'] .goal-card h3,
+html[data-theme='dark'] .settings-card-heading h2 {
+  color: #f6ebf0;
+}
+
+html[data-theme='dark'] .brand p,
+html[data-theme='dark'] .welcome p,
+html[data-theme='dark'] .task-subtitle,
+html[data-theme='dark'] .calendar-subtitle,
+html[data-theme='dark'] .notes-subtitle,
+html[data-theme='dark'] .habits-subtitle,
+html[data-theme='dark'] .goals-subtitle,
+html[data-theme='dark'] .settings-subtitle,
+html[data-theme='dark'] .muted,
+html[data-theme='dark'] .settings-card-heading p,
+html[data-theme='dark'] .settings-photo-actions small,
+html[data-theme='dark'] .settings-email,
+html[data-theme='dark'] .notes-count,
+html[data-theme='dark'] .note-card-content p,
+html[data-theme='dark'] .note-card-footer,
+html[data-theme='dark'] .habit-stat-card p,
+html[data-theme='dark'] .habits-section-heading p:not(.habits-eyebrow),
+html[data-theme='dark'] .habit-status,
+html[data-theme='dark'] .habits-empty p,
+html[data-theme='dark'] .agenda-task span,
+html[data-theme='dark'] .goal-card p {
+  color: #b9a8b2;
+}
+
+html[data-theme='dark'] .nav-item {
+  color: #d8c8d1;
+}
+
+html[data-theme='dark'] .nav-item:hover,
+html[data-theme='dark'] .nav-item.active {
+  background: #3b2230;
+  color: #ffb1cd;
+}
+
+html[data-theme='dark'] .sidebar-quote,
+html[data-theme='dark'] .app-footer {
+  background: #2d1b25;
+  border-color: #49303d;
+  color: #db9db7;
+}
+
+html[data-theme='dark'] .search-box,
+html[data-theme='dark'] .task-search,
+html[data-theme='dark'] .notes-search,
+html[data-theme='dark'] .habits-date {
+  background: #1d161c;
+  border-color: #493440;
+  color: #c894aa;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] select {
+  color: #f2e7ec;
+  background-color: #1c151b;
+  border-color: #4d3843;
+}
+
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+  color: #826f79;
+}
+
+html[data-theme='dark'] .search-box input,
+html[data-theme='dark'] .task-search input,
+html[data-theme='dark'] .notes-search input {
+  background: transparent;
+  color: #f2e7ec;
+}
+
+html[data-theme='dark'] .stat-card,
+html[data-theme='dark'] .panel,
+html[data-theme='dark'] .task-stat-card,
+html[data-theme='dark'] .task-manager-panel,
+html[data-theme='dark'] .calendar-summary-card,
+html[data-theme='dark'] .calendar-main-panel,
+html[data-theme='dark'] .calendar-agenda,
+html[data-theme='dark'] .note-card,
+html[data-theme='dark'] .notes-modal,
+html[data-theme='dark'] .habit-stat-card,
+html[data-theme='dark'] .habits-panel,
+html[data-theme='dark'] .weekly-panel,
+html[data-theme='dark'] .focus-panel,
+html[data-theme='dark'] .goals-stat,
+html[data-theme='dark'] .goals-form,
+html[data-theme='dark'] .goals-list,
+html[data-theme='dark'] .goal-card,
+html[data-theme='dark'] .settings-card {
+  background: #211920;
+  border-color: #44323d;
+  box-shadow: 0 8px 26px rgba(0,0,0,.14);
+}
+
+html[data-theme='dark'] .settings-card.danger {
+  background: #26191f;
+  border-color: #5a3442;
+}
+
+html[data-theme='dark'] .stat-icon,
+html[data-theme='dark'] .habit-stat-icon.pink,
+html[data-theme='dark'] .settings-card-icon,
+html[data-theme='dark'] .quick-capture-icon,
+html[data-theme='dark'] .focus-heading-icon,
+html[data-theme='dark'] .goal-card-icon,
+html[data-theme='dark'] .calendar-summary-card > svg {
+  background: #3a2230;
+  color: #efa0bd;
+}
+
+html[data-theme='dark'] .settings-card-icon.lavender,
+html[data-theme='dark'] .habit-stat-icon.purple {
+  background: #30283f;
+  color: #b8a7ef;
+}
+
+html[data-theme='dark'] .habit-stat-icon.orange {
+  background: #3b2c20;
+  color: #e6b777;
+}
+
+html[data-theme='dark'] .settings-card-icon.rose {
+  background: #40212b;
+  color: #ef91aa;
+}
+
+html[data-theme='dark'] .task-row,
+html[data-theme='dark'] .habit-row,
+html[data-theme='dark'] .home-habit-row,
+html[data-theme='dark'] .task-footer,
+html[data-theme='dark'] .note-card-footer,
+html[data-theme='dark'] .notes-modal-footer,
+html[data-theme='dark'] .profile-dropdown-user,
+html[data-theme='dark'] .task-filter-tabs {
+  border-color: #3d2c36;
+}
+
+html[data-theme='dark'] .habit-row,
+html[data-theme='dark'] .habit-create-form,
+html[data-theme='dark'] .task-editor,
+html[data-theme='dark'] .settings-counts li,
+html[data-theme='dark'] .notes-empty {
+  background: #1d171c;
+  border-color: #44323d;
+}
+
+html[data-theme='dark'] .habit-row.completed {
+  background: #291b23;
+  border-color: #533242;
+}
+
+html[data-theme='dark'] .calendar-grid-full {
+  border-color: #44323d;
+}
+
+html[data-theme='dark'] .calendar-weekday,
+html[data-theme='dark'] .calendar-cell {
+  border-color: #44323d;
+}
+
+html[data-theme='dark'] .calendar-cell {
+  background: #1f181e;
+  color: #e9dae2;
+}
+
+html[data-theme='dark'] .calendar-cell:hover,
+html[data-theme='dark'] .calendar-cell.selected-day {
+  background: #38212e;
+}
+
+html[data-theme='dark'] .calendar-cell.outside-month {
+  background: #191318;
+  color: #776771;
+}
+
+html[data-theme='dark'] .calendar-view-switch {
+  background: #2e1d27;
+}
+
+html[data-theme='dark'] .calendar-view-switch button {
+  color: #bdaab4;
+}
+
+html[data-theme='dark'] .calendar-view-switch button.selected,
+html[data-theme='dark'] .calendar-today-button,
+html[data-theme='dark'] .agenda-add-button,
+html[data-theme='dark'] .notes-secondary-button,
+html[data-theme='dark'] .cancel-button,
+html[data-theme='dark'] .settings-danger-button {
+  background: #241b21;
+  border-color: #523744;
+  color: #e79ab7;
+}
+
+html[data-theme='dark'] .calendar-event-marker.pink { background: #482535; color: #ffb0cc; }
+html[data-theme='dark'] .calendar-event-marker.purple { background: #342846; color: #c5b0ff; }
+html[data-theme='dark'] .calendar-event-marker.blue { background: #233249; color: #9ec0ff; }
+html[data-theme='dark'] .calendar-event-marker.orange { background: #423021; color: #efba82; }
+html[data-theme='dark'] .calendar-event-marker.green { background: #223b32; color: #8dd0b2; }
+html[data-theme='dark'] .calendar-task-marker { background: #2b2328; color: #c6b7bf; }
+
+html[data-theme='dark'] .note-category { background: #3b2531; color: #e99ab8; }
+html[data-theme='dark'] .category-study { background: #302942; color: #bdb1f1; }
+html[data-theme='dark'] .category-coding { background: #20382f; color: #91ceb6; }
+html[data-theme='dark'] .category-work { background: #3c2b21; color: #dfad85; }
+html[data-theme='dark'] .category-ideas { background: #3b321f; color: #dcc47a; }
+
+html[data-theme='dark'] .note-modal-close,
+html[data-theme='dark'] .habit-check,
+html[data-theme='dark'] .profile-dropdown {
+  background: #211920;
+  border-color: #44323d;
+  color: #cfbdc6;
+}
+
+html[data-theme='dark'] .profile-trigger {
+  color: #c9a8b7;
+}
+
+html[data-theme='dark'] .profile-trigger:hover,
+html[data-theme='dark'] .profile-dropdown button:hover,
+html[data-theme='dark'] .icon-button:hover,
+html[data-theme='dark'] .note-action:hover,
+html[data-theme='dark'] .note-delete-button:hover,
+html[data-theme='dark'] .habit-delete:hover,
+html[data-theme='dark'] .agenda-actions button:hover {
+  background: #38232f;
+}
+
+html[data-theme='dark'] .profile-dropdown-user strong,
+html[data-theme='dark'] .profile-dropdown button {
+  color: #eadde4;
+}
+
+html[data-theme='dark'] .profile-dropdown button.danger {
+  color: #f09aae;
+}
+
+html[data-theme='dark'] .profile-dropdown button.danger:hover,
+html[data-theme='dark'] .settings-danger-button:hover {
+  background: #41232d;
+}
+
+html[data-theme='dark'] .progress-track,
+html[data-theme='dark'] .weekly-bar-track {
+  background: #3c2c35;
+}
+
+html[data-theme='dark'] .habit-dots span {
+  background: #4a3540;
+}
+
+html[data-theme='dark'] .task-filter,
+html[data-theme='dark'] .notes-filter {
+  background: #211920;
+  border-color: #493440;
+  color: #bdabb5;
+}
+
+html[data-theme='dark'] .task-filter span {
+  background: #33232c;
+}
+
+html[data-theme='dark'] .task-filter.active,
+html[data-theme='dark'] .notes-filter.active {
+  background: #422431;
+  border-color: #81506a;
+  color: #ffb0cc;
+}
+
+html[data-theme='dark'] .theme-option {
+  background: #1d171c;
+  border-color: #47333e;
+  color: #c9b7c0;
+}
+
+html[data-theme='dark'] .theme-option:hover {
+  background: #2a1d25;
+  border-color: #70485b;
+  color: #f0b1c8;
+}
+
+html[data-theme='dark'] .theme-option.active {
+  background: linear-gradient(145deg, #3b2230, #32202a);
+  border-color: #9b5d79;
+  color: #ffc0d6;
+  box-shadow: inset 0 0 0 1px rgba(255,180,208,.04), 0 8px 20px rgba(0,0,0,.16);
+}
+
+html[data-theme='dark'] .settings-card-icon.theme-icon {
+  background: linear-gradient(145deg, #3a2330, #2c253a);
+  color: #efafd0;
+}
+
+html[data-theme='dark'] .auth-shell {
+  background: #140f14;
+}
+
+html[data-theme='dark'] .auth-brand {
+  background: linear-gradient(155deg, #321925, #25151f 55%, #1b1319);
+  border-color: #4a2e3b;
+}
+
+html[data-theme='dark'] .auth-brand-logo h1,
+html[data-theme='dark'] .auth-brand-copy h2,
+html[data-theme='dark'] .auth-heading h2 {
+  color: #f7eaf0;
+}
+
+html[data-theme='dark'] .auth-brand-logo p,
+html[data-theme='dark'] .auth-brand-copy p,
+html[data-theme='dark'] .auth-brand-footer,
+html[data-theme='dark'] .auth-heading p,
+html[data-theme='dark'] .auth-card label,
+html[data-theme='dark'] .auth-switch {
+  color: #bea9b4;
+}
+
+html[data-theme='dark'] .auth-card {
+  background: rgba(33,25,32,.94);
+  border-color: #493440;
+  box-shadow: 0 22px 60px rgba(0,0,0,.26);
+}
+
+html[data-theme='dark'] .auth-error,
+html[data-theme='dark'] .settings-message.error {
+  background: #40212a;
+  border-color: #653444;
+  color: #ff9eb5;
+}
+
+html[data-theme='dark'] .settings-message.success {
+  background: #1d352c;
+  border-color: #315345;
+  color: #97d5b7;
+}
+
+html[data-theme='dark'] ::selection {
+  background: #824760;
+  color: #fff;
+}
+
+@media (max-width: 560px) {
+  .theme-options {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-option {
+    justify-content: flex-start;
+  }
+}
+
+/* =======================================================
+   DAYFLOW DARK CONTRAST + SIDEBAR SPACING FIX
+   Fixes:
+   1) low-contrast focus timer text in dark mode
+   2) light Quick Capture card with light text in dark mode
+   3) sidebar quote visually colliding with the Settings item
+======================================================= */
+
+/* Keep the fixed sidebar usable at shorter viewport heights. */
+.sidebar {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.nav-list {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.sidebar-quote {
+  flex-shrink: 0;
+}
+
+/* Focus timer: a light-theme override earlier in the stylesheet sets the
+   countdown to #3b2933, so explicitly restore dark-theme contrast here. */
+html[data-theme='dark'] .focus-timer-display strong {
+  color: #f7eaf0;
+}
+
+html[data-theme='dark'] .focus-timer-display span,
+html[data-theme='dark'] .focus-tip {
+  color: #c8b3bf;
+}
+
+/* Quick Capture is part of the shared light card group but was missing from
+   the dark card override, leaving a bright card with low-contrast text. */
+html[data-theme='dark'] .quick-capture {
+  background:
+    radial-gradient(circle at 94% 0%, rgba(238, 126, 168, .08), transparent 14rem),
+    #211920;
+  border-color: #44323d;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .14);
+}
+
+html[data-theme='dark'] .quick-capture-main h2 {
+  color: #f6ebf0;
+}
+
+html[data-theme='dark'] .quick-capture-main > p {
+  color: #b9a8b2;
+}
+
+html[data-theme='dark'] .quick-capture-form input {
+  background: #1c151b;
+  border-color: #4d3843;
+  color: #f2e7ec;
+}
+
+html[data-theme='dark'] .quick-capture-form input::placeholder {
+  color: #927d88;
+}
+
+html[data-theme='dark'] .quick-capture-form button {
+  background: #3b2230;
+  color: #ffb0cc;
+  border: 1px solid #5a3949;
+}
+
+html[data-theme='dark'] .quick-capture-form button:hover {
+  background: #482838;
+}
+
+/* Give the last navigation item breathing room above the quote card. */
+@media (min-width: 769px) {
+  .nav-list {
+    padding-bottom: 2px;
+  }
+}
+
+/* On short desktop windows, let the whole sidebar scroll rather than allowing
+   the quote card to compress into the navigation. */
+@media (min-width: 769px) and (max-height: 760px) {
+  .sidebar {
+    padding-bottom: 14px;
+  }
+
+  .brand {
+    padding-bottom: 22px;
+  }
+
+  .sidebar-quote {
+    padding-top: 14px;
+    padding-bottom: 10px;
+  }
+}
+
