@@ -8,20 +8,29 @@ function sessionDays() {
   return Number.isFinite(value) && value > 0 ? value : 30
 }
 
+function baseCookieOptions() {
+  const production = process.env.NODE_ENV === 'production'
+  return {
+    httpOnly: true,
+    sameSite: production ? 'lax' : 'lax',
+    secure: production,
+    path: '/',
+  }
+}
+
 export function hashSessionToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
 export function sessionCookieOptions() {
-  const maxAge = sessionDays() * 24 * 60 * 60 * 1000
-
   return {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge,
+    ...baseCookieOptions(),
+    maxAge: sessionDays() * 24 * 60 * 60 * 1000,
   }
+}
+
+export function clearSessionCookie(res) {
+  res.clearCookie(SESSION_COOKIE, baseCookieOptions())
 }
 
 export async function createSession(userId) {

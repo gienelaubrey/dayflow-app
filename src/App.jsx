@@ -24,7 +24,7 @@ import useGoals from './lib/useGoals.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import useTheme from './lib/useTheme.js'
-import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
+import { getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 
 const navItems = [
@@ -103,8 +103,6 @@ export default function App() {
 }
 
 function Workspace({ user, theme, onUpdateProfile, onLogout }) {
-  const key = name => dataKey(user.id, name)
-
   const {
     tasks,
     loading: tasksLoading,
@@ -158,7 +156,7 @@ function Workspace({ user, theme, onUpdateProfile, onLogout }) {
     deleteGoal,
     replaceGoals,
   } = useGoals(user.id)
-  const focusTimer = useFocusTimer(key('focus-timer'), createFocusSession)
+  const focusTimer = useFocusTimer(`dayflow:${user.id}:focus-timer`, createFocusSession)
 
   const [activePage, setActivePage] = useState('Home')
   const [calendarDate, setCalendarDate] = useState(null)

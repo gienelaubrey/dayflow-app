@@ -12,6 +12,7 @@ import {
   secondsUntilResend,
 } from '../lib/otp.js'
 import {
+  clearSessionCookie,
   createSession,
   deleteSessionByToken,
   SESSION_COOKIE,
@@ -379,12 +380,7 @@ router.post('/reset-password', async (req, res, next) => {
       await tx.session.deleteMany({ where: { userId: user.id } })
     })
 
-    res.clearCookie(SESSION_COOKIE, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    })
+    clearSessionCookie(res)
 
     return res.json({ ok: true, message: 'Password updated. Log in with your new password.' })
   } catch (error) {
@@ -419,12 +415,7 @@ router.post('/logout', async (req, res, next) => {
   try {
     const token = req.cookies?.[SESSION_COOKIE]
     await deleteSessionByToken(token)
-    res.clearCookie(SESSION_COOKIE, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    })
+    clearSessionCookie(res)
     return res.status(204).end()
   } catch (error) {
     next(error)

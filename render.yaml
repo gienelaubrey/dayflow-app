@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: dayflow
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build && cd server && npm ci --include=dev && npx prisma generate
+    startCommand: cd server && npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: OTP_SECRET
+        generateValue: true
+      - key: SESSION_DAYS
+        value: "30"
+      - key: OTP_TTL_MINUTES
+        value: "10"
+      - key: OTP_RESEND_SECONDS
+        value: "45"
+      - key: OTP_MAX_ATTEMPTS
+        value: "5"
+      - key: API_RATE_LIMIT_MAX
+        value: "600"
+      - key: AUTH_RATE_LIMIT_MAX
+        value: "60"

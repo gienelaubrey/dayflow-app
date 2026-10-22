@@ -1,7 +1,11 @@
-// DayFlow frontend authentication client.
-// Permanent accounts and sessions live on the Express/PostgreSQL backend.
+// DayFlow frontend authentication/API client.
+// In development the API defaults to localhost:4000.
+// In production the app and API are served from the same origin unless VITE_API_URL is explicitly set.
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '')
+const configuredApiUrl = String(import.meta.env.VITE_API_URL || '').trim()
+const API_URL = (
+  configuredApiUrl || (import.meta.env.DEV ? 'http://localhost:4000' : '')
+).replace(/\/$/, '')
 const LEGACY_USERS_KEY = 'dayflow-users'
 
 export const DATA_KEYS = ['tasks', 'events', 'notes', 'habits', 'focus-sessions', 'goals']
@@ -71,7 +75,9 @@ export async function apiRequest(path, options = {}) {
     })
   } catch {
     throw new AuthError(
-      'Could not reach the DayFlow server. Make sure the backend is running on port 4000.'
+      import.meta.env.DEV
+        ? 'Could not reach the DayFlow server. Make sure the backend is running on port 4000.'
+        : 'Could not reach DayFlow. Check your connection and try again.'
     )
   }
 
@@ -94,7 +100,6 @@ export async function apiRequest(path, options = {}) {
   return body
 }
 
-// Starts registration. A permanent User is not created until verifyRegistration succeeds.
 export async function register({ name, email, password }) {
   return apiRequest('/api/auth/register', {
     method: 'POST',
