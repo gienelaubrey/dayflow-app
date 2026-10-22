@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import authRoutes from './routes/auth.js'
 import taskRoutes from './routes/tasks.js'
 import eventRoutes from './routes/events.js'
+import noteRoutes from './routes/notes.js'
 import { prisma } from './lib/prisma.js'
 
 export const app = express()
@@ -31,6 +32,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/events', eventRoutes)
+app.use('/api/notes', noteRoutes)
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found.' })

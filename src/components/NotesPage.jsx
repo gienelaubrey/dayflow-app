@@ -51,7 +51,11 @@ function formatDate(date) {
 
 export default function NotesPage({
   notes = [],
-  setNotes,
+  loading = false,
+  error = '',
+  onCreateNote,
+  onUpdateNote,
+  onDeleteNote,
 }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All Notes')
@@ -59,6 +63,7 @@ export default function NotesPage({
   const [editingNote, setEditingNote] = useState(null)
   const [showEditor, setShowEditor] = useState(false)
   const [noteForm, setNoteForm] = useState(EMPTY_NOTE)
+  const [saving, setSaving] = useState(false)
 
   const filteredNotes = useMemo(() => {
     const query = search.toLowerCase().trim()
@@ -117,55 +122,43 @@ export default function NotesPage({
     setEditingNote(null)
   }
 
-  function saveNote(event) {
+  async function saveNote(event) {
     event.preventDefault()
 
-    if (!noteForm.title.trim() && !noteForm.content.trim()) {
-      return
+    if (!noteForm.title.trim() && !noteForm.content.trim()) return
+    if (saving) return
+
+    setSaving(true)
+    try {
+      const payload = {
+        ...noteForm,
+        title: noteForm.title.trim() || 'Untitled note',
+        content: noteForm.content.trim(),
+      }
+
+      if (editingNote) {
+        await onUpdateNote(editingNote.id, payload)
+      } else {
+        await onCreateNote(payload)
+      }
+
+      closeEditor()
+    } catch {
+      // The shared error banner is supplied by the Notes API hook.
+    } finally {
+      setSaving(false)
     }
-
-    const now = new Date().toISOString()
-
-    if (editingNote) {
-      setNotes((previous) =>
-        previous.map((note) =>
-          note.id === editingNote.id
-            ? {
-                ...note,
-                ...noteForm,
-                title: noteForm.title.trim() || 'Untitled note',
-                updatedAt: now,
-              }
-            : note
-        )
-      )
-    } else {
-      setNotes((previous) => [
-        {
-          id: crypto.randomUUID(),
-          ...noteForm,
-          title: noteForm.title.trim() || 'Untitled note',
-          createdAt: now,
-          updatedAt: now,
-        },
-        ...previous,
-      ])
-    }
-
-    closeEditor()
   }
 
-  function captureIdea(event) {
+  async function captureIdea(event) {
     event.preventDefault()
 
     const content = quickCapture.trim()
-    if (!content) return
+    if (!content || saving) return
 
-    const now = new Date().toISOString()
-
-    setNotes((previous) => [
-      {
-        id: crypto.randomUUID(),
+    setSaving(true)
+    try {
+      await onCreateNote({
         title: content.length > 48
           ? `${content.slice(0, 48)}…`
           : content,
@@ -173,42 +166,38 @@ export default function NotesPage({
         category: 'Ideas',
         favorite: false,
         pinned: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...previous,
-    ])
-
-    setQuickCapture('')
+      })
+      setQuickCapture('')
+    } catch {
+      // The shared error banner is supplied by the Notes API hook.
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function toggleNoteProperty(id, property) {
-    setNotes((previous) =>
-      previous.map((note) =>
-        note.id === id
-          ? {
-              ...note,
-              [property]: !note[property],
-              updatedAt: new Date().toISOString(),
-            }
-          : note
-      )
-    )
+  async function toggleNoteProperty(id, property) {
+    const note = notes.find(item => item.id === id)
+    if (!note) return
+
+    try {
+      await onUpdateNote(id, { [property]: !note[property] })
+    } catch {
+      // The shared error banner is supplied by the Notes API hook.
+    }
   }
 
-  function deleteNote(id) {
+  async function deleteNote(id) {
     const confirmed = window.confirm(
       'Are you sure you want to delete this note?'
     )
 
     if (!confirmed) return
 
-    setNotes((previous) =>
-      previous.filter((note) => note.id !== id)
-    )
-
-    if (editingNote?.id === id) {
-      closeEditor()
+    try {
+      await onDeleteNote(id)
+      if (editingNote?.id === id) closeEditor()
+    } catch {
+      // The shared error banner is supplied by the Notes API hook.
     }
   }
 
@@ -239,6 +228,11 @@ export default function NotesPage({
         </button>
       </header>
 
+      {error && <div className="auth-error" role="alert">{error}</div>}
+      {loading && notes.length === 0 && (
+        <p className="empty-state">Loading your notes…</p>
+      )}
+
       <section className="quick-capture">
         <div className="quick-capture-icon">
           <Lightbulb size={22} />
@@ -263,11 +257,11 @@ export default function NotesPage({
 
             <button
               type="submit"
-              disabled={!quickCapture.trim()}
+              disabled={saving || !quickCapture.trim()}
               aria-label="Save quick note"
             >
               <ArrowUpRight size={18} />
-              <span>Capture</span>
+              <span>{saving ? 'Saving…' : 'Capture'}</span>
             </button>
           </form>
         </div>
@@ -573,11 +567,11 @@ export default function NotesPage({
                   type="submit"
                   className="notes-primary-button"
                   disabled={
-                    !noteForm.title.trim() &&
-                    !noteForm.content.trim()
+                    saving ||
+                    (!noteForm.title.trim() && !noteForm.content.trim())
                   }
                 >
-                  {editingNote ? 'Save changes' : 'Save note'}
+                  {saving ? 'Saving…' : editingNote ? 'Save changes' : 'Save note'}
                 </button>
               </footer>
             </form>

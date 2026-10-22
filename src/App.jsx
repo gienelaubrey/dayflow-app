@@ -18,13 +18,13 @@ import ProfileMenu from './components/ProfileMenu.jsx'
 import useStoredState from './lib/useStoredState.js'
 import useTasks from './lib/useTasks.js'
 import useEvents from './lib/useEvents.js'
+import useNotes from './lib/useNotes.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
 import {
-  normalizeNotes, normalizeHabits,
-  normalizeFocusSessions, normalizeGoals,
+  normalizeHabits, normalizeFocusSessions, normalizeGoals,
 } from './lib/data.js'
 
 const navItems = [
@@ -122,7 +122,15 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     deleteEvent,
     replaceEvents,
   } = useEvents(user.id)
-  const [notes, setNotes] = useStoredState(key('notes'), [], normalizeNotes)
+  const {
+    notes,
+    loading: notesLoading,
+    error: notesError,
+    createNote,
+    updateNote,
+    deleteNote: deleteNoteRemote,
+    replaceNotes,
+  } = useNotes(user.id)
   const [habits, setHabits] = useStoredState(key('habits'), [], normalizeHabits)
   const [focusSessions, setFocusSessions] = useStoredState(
     key('focus-sessions'), [], normalizeFocusSessions
@@ -219,26 +227,24 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     }))
   }
 
-  function saveQuickNote(e) {
+  async function saveQuickNote(e) {
     e.preventDefault()
     const text = quickNote.trim()
     if (!text) return
-    const now = new Date().toISOString()
-    setNotes(current => [
-      {
-        id: crypto.randomUUID(),
+
+    try {
+      await createNote({
         title: text.length > 48 ? `${text.slice(0, 48)}…` : text,
         content: text,
         category: 'Ideas',
         favorite: false,
         pinned: false,
-        createdAt: now,
-        updatedAt: now,
-      },
-      ...current,
-    ])
-    setQuickNote('')
-    setNoteSaved(true)
+      })
+      setQuickNote('')
+      setNoteSaved(true)
+    } catch {
+      // The shared Notes error banner will display the API error.
+    }
   }
 
   function changeMonth(offset) {
@@ -359,6 +365,8 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
         {activePage === 'Home' ? (
           <>
             {tasksError && <div className="auth-error" role="alert">{tasksError}</div>}
+            {eventsError && <div className="auth-error" role="alert">{eventsError}</div>}
+            {notesError && <div className="auth-error" role="alert">{notesError}</div>}
             <div className="stats-grid">
               <StatCard icon={CheckSquare} title="Tasks Completed"
                 value={`${completed} / ${tasks.length}`}
@@ -590,7 +598,14 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             onDeleteEvent={deleteEvent}
           />
         ) : activePage === 'Notes' ? (
-          <NotesPage notes={notes} setNotes={setNotes} />
+          <NotesPage
+            notes={notes}
+            loading={notesLoading}
+            error={notesError}
+            onCreateNote={createNote}
+            onUpdateNote={updateNote}
+            onDeleteNote={deleteNoteRemote}
+          />
         ) : activePage === 'Habits' ? (
           <HabitsFocusPage
             view="habits"
@@ -619,7 +634,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             setters={{
               tasks: replaceTasks,
               events: replaceEvents,
-              notes: setNotes,
+              notes: replaceNotes,
               habits: setHabits,
               focusSessions: setFocusSessions,
               goals: setGoals,
