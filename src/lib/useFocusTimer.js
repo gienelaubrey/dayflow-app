@@ -14,6 +14,7 @@ const DEFAULT_TIMER = {
   recordedRunId: null,
   startedAt: null,
   sessionMinutes: null,
+  completedAt: null,
 }
 
 function clampMinutes(value, fallback) {
@@ -47,6 +48,9 @@ function normalizeTimer(raw) {
     recordedRunId: typeof raw.recordedRunId === 'string' ? raw.recordedRunId : null,
     startedAt: typeof raw.startedAt === 'string' ? raw.startedAt : null,
     sessionMinutes: Number.isFinite(Number(raw.sessionMinutes)) ? Number(raw.sessionMinutes) : null,
+    completedAt: typeof raw.completedAt === 'string' && !Number.isNaN(Date.parse(raw.completedAt))
+      ? raw.completedAt
+      : null,
   }
 }
 
@@ -55,7 +59,7 @@ function makeRunId() {
   return `focus-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
-export default function useFocusTimer(storageKey, setFocusSessions) {
+export default function useFocusTimer(storageKey, onCompleteSession) {
   const [timer, setTimer] = useStoredState(storageKey, DEFAULT_TIMER, normalizeTimer)
   const targetMinutes = timer.mode === 'focus' ? timer.focusMinutes : timer.breakMinutes
 
@@ -78,6 +82,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
             isRunning: false,
             endsAt: null,
             timerCompleted: true,
+            completedAt: new Date(current.endsAt).toISOString(),
           }
         }
 
@@ -91,33 +96,47 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
     return () => window.clearInterval(timerId)
   }, [timer.isRunning, timer.endsAt, setTimer])
 
+  // Save a completed focus run to PostgreSQL. The run ID is sent as clientRunId,
+  // which makes retries idempotent on the backend. If the API is temporarily
+  // unavailable, retry while this completed run is still pending.
   useEffect(() => {
     if (
       !timer.timerCompleted ||
       timer.mode !== 'focus' ||
       !timer.runId ||
-      timer.recordedRunId === timer.runId
+      timer.recordedRunId === timer.runId ||
+      typeof onCompleteSession !== 'function'
     ) return
 
-    const sessionId = timer.runId
+    const sessionRunId = timer.runId
     const minutes = timer.sessionMinutes || timer.focusMinutes
+    const completedAt = timer.completedAt || new Date().toISOString()
+    let cancelled = false
+    let retryId = null
 
-    setFocusSessions(previous => {
-      if (previous.some(session => session.id === sessionId)) return previous
-      return [
-        ...previous,
-        {
-          id: sessionId,
-          date: dateKey(),
+    async function record() {
+      try {
+        await onCompleteSession({
+          clientRunId: sessionRunId,
+          date: dateKey(new Date(completedAt)),
           minutes,
-          completedAt: new Date().toISOString(),
-        },
-      ]
-    })
+          completedAt,
+        })
 
-    setTimer(current => current.runId === sessionId
-      ? { ...current, recordedRunId: sessionId }
-      : current)
+        if (cancelled) return
+        setTimer(current => current.runId === sessionRunId
+          ? { ...current, recordedRunId: sessionRunId }
+          : current)
+      } catch {
+        if (!cancelled) retryId = window.setTimeout(record, 10_000)
+      }
+    }
+
+    record()
+    return () => {
+      cancelled = true
+      if (retryId) window.clearTimeout(retryId)
+    }
   }, [
     timer.timerCompleted,
     timer.mode,
@@ -125,7 +144,8 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
     timer.recordedRunId,
     timer.sessionMinutes,
     timer.focusMinutes,
-    setFocusSessions,
+    timer.completedAt,
+    onCompleteSession,
     setTimer,
   ])
 
@@ -142,6 +162,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
         recordedRunId: null,
         startedAt: null,
         sessionMinutes: null,
+        completedAt: null,
       }
     })
   }
@@ -161,6 +182,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
         recordedRunId: null,
         startedAt: null,
         sessionMinutes: null,
+        completedAt: null,
       }
     })
   }
@@ -179,6 +201,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
         recordedRunId: null,
         startedAt: null,
         sessionMinutes: null,
+        completedAt: null,
       } : {}),
     }))
   }
@@ -197,6 +220,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
         recordedRunId: null,
         startedAt: null,
         sessionMinutes: null,
+        completedAt: null,
       } : {}),
     }))
   }
@@ -230,6 +254,7 @@ export default function useFocusTimer(storageKey, setFocusSessions) {
         recordedRunId: startingFresh ? null : current.recordedRunId,
         startedAt: startingFresh ? new Date().toISOString() : current.startedAt,
         sessionMinutes: startingFresh ? minutes : current.sessionMinutes,
+        completedAt: startingFresh ? null : current.completedAt,
       }
     })
   }

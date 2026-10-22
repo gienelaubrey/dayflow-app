@@ -62,7 +62,8 @@ export default function HabitsFocusPage({
   onToggleHabit,
   onDeleteHabit,
   focusSessions = [],
-  setFocusSessions,
+  focusLoading = false,
+  focusError = '',
   focusTimer,
   view = 'all',
 }) {
@@ -181,7 +182,9 @@ export default function HabitsFocusPage({
         </div>
       </header>
 
-      {error && <div className="auth-error" role="alert">{error}</div>}
+      {(error || focusError) && (
+        <div className="auth-error" role="alert">{error || focusError}</div>
+      )}
     
     {view !== 'focus' && (
       <section className="habits-stats">
@@ -201,7 +204,7 @@ export default function HabitsFocusPage({
           </div>
           <div>
             <p>Focus minutes today</p>
-            <h2>{todayFocusMinutes}<span> min</span></h2>
+            <h2>{focusLoading ? '…' : todayFocusMinutes}<span> min</span></h2>
           </div>
         </article>
 

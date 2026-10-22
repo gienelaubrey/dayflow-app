@@ -20,11 +20,12 @@ import useTasks from './lib/useTasks.js'
 import useEvents from './lib/useEvents.js'
 import useNotes from './lib/useNotes.js'
 import useHabits from './lib/useHabits.js'
+import useFocusSessions from './lib/useFocusSessions.js'
 import useFocusTimer from './lib/useFocusTimer.js'
 import useTodayKey from './lib/useTodayKey.js'
 import { dataKey, getSessionUser, logout, updateProfile } from './lib/auth.js'
 import { dateKey, formatTime, habitStreak, overallStreak } from './lib/dates.js'
-import { normalizeFocusSessions, normalizeGoals } from './lib/data.js'
+import { normalizeGoals } from './lib/data.js'
 
 const navItems = [
   { label: 'Home', icon: House },
@@ -139,11 +140,15 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
     deleteHabit: deleteHabitRemote,
     replaceHabits,
   } = useHabits(user.id)
-  const [focusSessions, setFocusSessions] = useStoredState(
-    key('focus-sessions'), [], normalizeFocusSessions
-  )
+  const {
+    focusSessions,
+    loading: focusSessionsLoading,
+    error: focusSessionsError,
+    createFocusSession,
+    replaceFocusSessions,
+  } = useFocusSessions(user.id)
   const [goals, setGoals] = useStoredState(key('goals'), [], normalizeGoals)
-  const focusTimer = useFocusTimer(key('focus-timer'), setFocusSessions)
+  const focusTimer = useFocusTimer(key('focus-timer'), createFocusSession)
 
   const [activePage, setActivePage] = useState('Home')
   const [calendarDate, setCalendarDate] = useState(null)
@@ -615,7 +620,8 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             onToggleHabit={toggleHabitRemote}
             onDeleteHabit={deleteHabitRemote}
             focusSessions={focusSessions}
-            setFocusSessions={setFocusSessions}
+            focusLoading={focusSessionsLoading}
+            focusError={focusSessionsError}
             focusTimer={focusTimer}
           />
         ) : activePage === 'Time Tracker' ? (
@@ -628,7 +634,8 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
             onToggleHabit={toggleHabitRemote}
             onDeleteHabit={deleteHabitRemote}
             focusSessions={focusSessions}
-            setFocusSessions={setFocusSessions}
+            focusLoading={focusSessionsLoading}
+            focusError={focusSessionsError}
             focusTimer={focusTimer}
           />
         ) : activePage === 'Goals' ? (
@@ -643,7 +650,7 @@ function Workspace({ user, onUpdateProfile, onLogout }) {
               events: replaceEvents,
               notes: replaceNotes,
               habits: replaceHabits,
-              focusSessions: setFocusSessions,
+              focusSessions: replaceFocusSessions,
               goals: setGoals,
             }}
           />
