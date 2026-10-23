@@ -228,7 +228,7 @@ export default function AuthPage({ onAuthenticated }) {
         ? 'Reset your password'
         : isSignup
           ? 'Create your account'
-          : 'Welcome back'
+          : 'Welcome back!'
 
   const subheading = isVerify
     ? <>We sent a 6-digit code to <strong>{pendingEmail}</strong>.</>
