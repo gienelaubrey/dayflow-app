@@ -1,6 +1,6 @@
 # DayFlow
 
-**DayFlow** is a full-stack productivity web application designed to help users organize their day, stay focused, build habits, and track personal goals in one place.
+**DayFlow** is a full-stack productivity web application built to help users organize tasks, manage schedules, track habits, stay focused, and work toward personal goals from one interface.
 
 > **Plan · Focus · Grow**
 
@@ -9,18 +9,18 @@
 - Task management
 - Calendar and event planning
 - Notes and quick capture
-- Habit tracking and streaks
+- Habit tracking
 - Focus timer
 - Goal tracking
 - User authentication
 - Email verification and password recovery
 - Light, Dark, and System themes
-- Responsive desktop and mobile interface
-- Backup and restore support
+- Responsive desktop and mobile design
+- Data backup and restore
 
 ## Tech Stack
 
-### Frontend
+**Frontend**
 - React
 - Vite
 - JavaScript / JSX
@@ -28,105 +28,38 @@
 - Tailwind CSS
 - Lucide React
 
-### Backend
+**Backend**
 - Node.js
 - Express
 - Prisma
 - PostgreSQL
 
-### Services
+**Services**
 - Neon
 - Resend
 - Render
 - GitHub
 
-## Getting Started
+## About the Project
 
-### Requirements
+DayFlow was developed as a full-stack personal productivity project, covering frontend development, backend APIs, authentication, database persistence, responsive design, email integration, and production deployment.
 
-- Node.js 20+
-- npm
-- PostgreSQL
+The application is primarily designed for personal everyday use.
 
-### Installation
+## Status
 
-Clone the repository:
+**DayFlow v1 — Complete and Deployed**
 
-```bash
-git clone <repository-url>
-cd dayflow
-```
+Core functionality, authentication, persistent storage, responsive layouts, themes, and production deployment are implemented.
 
-Install frontend dependencies:
+## Usage
 
-```bash
-npm install
-```
+This repository is shared primarily as a **portfolio and project showcase**.
 
-Install backend dependencies:
+The source code and design are not intended for redistribution, republishing, or use as another project without permission.
 
-```bash
-cd server
-npm install
-```
+## Copyright
 
-Create your local environment files from the provided `.env.example` files and add your own configuration values.
-
-Generate Prisma Client:
-
-```bash
-npm run prisma:generate
-```
-
-Run the database migrations:
-
-```bash
-npm run prisma:migrate
-```
-
-Start the backend:
-
-```bash
-npm run dev
-```
-
-In another terminal, start the frontend:
-
-```bash
-cd ..
-npm run dev
-```
-
-The frontend will normally run on:
-
-```text
-http://localhost:5173
-```
-
-## Production Build
-
-Create the frontend production build with:
-
-```bash
-npm run build
-```
-
-DayFlow is configured for production deployment with Render and a managed PostgreSQL database.
-
-## Security
-
-Sensitive values such as database credentials, API keys, and application secrets are stored using environment variables and are not included in this repository.
-
-Never commit `.env` files or production credentials.
-
-## Project Status
-
-**DayFlow v1** is complete and deployed.
-
-The project includes the core productivity features, authentication, persistent storage, responsive design, and production support needed for personal everyday use.
-
-## Author
-
-Built as a full-stack development project for **DayFlow**.
+© 2026 DayFlow. All rights reserved.
 
 **Plan · Focus · Grow**
